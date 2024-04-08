@@ -1,0 +1,2 @@
+scaffold:
+  dotnet ef dbcontext scaffold "User ID=admin;Password=admin;Host=localhost;Port=5433;Database=inventory;" Npgsql.EntityFrameworkCore.PostgreSQL -o Models -c InventoryContext --context-dir Contexts -f --no-onconfiguring
