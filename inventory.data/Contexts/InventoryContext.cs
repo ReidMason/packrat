@@ -18,9 +18,9 @@ public partial class InventoryContext : DbContext
     {
         modelBuilder.Entity<Location>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("locations_pkey");
+            entity.HasKey(e => e.Id).HasName("location_pkey");
 
-            entity.ToTable("locations");
+            entity.ToTable("location");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name).HasColumnName("name");
