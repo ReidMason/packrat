@@ -6,7 +6,7 @@ using inventory.data.Models;
 namespace inventory.service.services;
 
 public interface IInventoryService {
-  public List<LocationDto> GetAllInventories();
+  public List<LocationDto> GetAllLocations();
   public void CreateLocation(NewLocationDto newLocation);
 }
 
@@ -27,7 +27,7 @@ public class InventoryService : IInventoryService
       _dbContext.SaveChanges();
     }
 
-    public List<LocationDto> GetAllInventories()
+    public List<LocationDto> GetAllLocations()
   {
     return _dbContext.Locations.Select(x => new LocationDto {
       Id = x.Id,
