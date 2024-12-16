@@ -1,27 +1,44 @@
+using Asp.Versioning;
+using packrat.webapi.OpenApi;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddApiVersioning(options =>
+{
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+var apiVersionSet = app.NewApiVersionSet()
+    .HasApiVersion(new ApiVersion(1))
+    .HasApiVersion(new ApiVersion(2))
+    .ReportApiVersions()
+    .Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseHttpsRedirection();
+
+var apiVersionGroupBuilder = app.MapGroup("api/v{version:apiVersion}")
+    .WithApiVersionSet(apiVersionSet);
 
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", () =>
+apiVersionGroupBuilder.MapGet("weatherforecast", () =>
     {
         var forecast = Enumerable.Range(1, 5).Select(index =>
                 new WeatherForecast
@@ -33,8 +50,30 @@ app.MapGet("/weatherforecast", () =>
             .ToArray();
         return forecast;
     })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
+    .WithOpenApi()
+    .MapToApiVersion(1);
+
+apiVersionGroupBuilder.MapGet("weatherforecast", () =>
+{
+    return "Hello world!";
+})
+.WithOpenApi()
+.MapToApiVersion(2);
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        var descriptions = app.DescribeApiVersions();
+        foreach (var description in descriptions)
+        {
+            var url = $"/swagger/{description.GroupName}/swagger.json";
+            var name = description.GroupName.ToUpperInvariant();
+            options.SwaggerEndpoint(url, name);
+        }
+    });
+}
 
 app.Run();
 
