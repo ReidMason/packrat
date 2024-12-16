@@ -1,4 +1,0 @@
-CREATE TABLE Location (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);

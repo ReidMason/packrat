@@ -1,6 +1,0 @@
-@inventory.webapi_HostAddress = http://localhost:5010
-
-GET {{inventory.webapi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
