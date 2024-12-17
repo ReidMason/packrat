@@ -1,7 +1,15 @@
 using Asp.Versioning;
 using packrat.webapi.OpenApi;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .CreateLogger();
+builder.Services.AddSerilog();
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -38,8 +46,9 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-apiVersionGroupBuilder.MapGet("weatherforecast", () =>
+apiVersionGroupBuilder.MapGet("weatherforecast", (ILogger<Program> logger) =>
     {
+        logger.LogError("Getting weather forecast");
         var forecast = Enumerable.Range(1, 5).Select(index =>
                 new WeatherForecast
                 (

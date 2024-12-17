@@ -1,6 +1,6 @@
 @packrat.webapi_HostAddress = http://localhost:5006
 
-GET {{packrat.webapi_HostAddress}}/weatherforecast/
+GET http://localhost:5006/api/v1/weatherforecast/
 Accept: application/json
 
 ###
