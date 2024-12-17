@@ -1,8 +1,10 @@
 using Asp.Versioning;
+using FastEndpoints;
 using packrat.webapi.OpenApi;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddFastEndpoints();
 
 // Logging
 Log.Logger = new LoggerConfiguration()
@@ -29,6 +31,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseFastEndpoints();
+
 var apiVersionSet = app.NewApiVersionSet()
     .HasApiVersion(new ApiVersion(1))
     .HasApiVersion(new ApiVersion(2))
@@ -40,34 +44,6 @@ app.UseHttpsRedirection();
 
 var apiVersionGroupBuilder = app.MapGroup("api/v{version:apiVersion}")
     .WithApiVersionSet(apiVersionSet);
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-apiVersionGroupBuilder.MapGet("weatherforecast", (ILogger<Program> logger) =>
-    {
-        logger.LogError("Getting weather forecast");
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithOpenApi()
-    .MapToApiVersion(1);
-
-apiVersionGroupBuilder.MapGet("weatherforecast", () =>
-{
-    return "Hello world!";
-})
-.WithOpenApi()
-.MapToApiVersion(2);
 
 if (app.Environment.IsDevelopment())
 {
