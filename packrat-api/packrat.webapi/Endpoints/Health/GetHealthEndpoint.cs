@@ -12,6 +12,7 @@ public class GetHealthEndpoint : EndpointWithoutRequest<HealthResponseDto>
 
     public override async Task HandleAsync(CancellationToken ct)
     {
+        Logger.LogInformation("Getting application health");
         await SendAsync(new HealthResponseDto("Healthy"), cancellation: ct);
     }
 }
