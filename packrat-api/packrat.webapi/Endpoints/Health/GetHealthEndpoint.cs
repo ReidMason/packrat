@@ -7,6 +7,7 @@ public class GetHealthEndpoint : EndpointWithoutRequest<HealthResponseDto>
     public override void Configure()
     {
         Get("/health");
+        Version(1);
         AllowAnonymous();
     }
 

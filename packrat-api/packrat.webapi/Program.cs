@@ -1,10 +1,19 @@
-using Asp.Versioning;
 using FastEndpoints;
-using packrat.webapi.OpenApi;
+using FastEndpoints.Swagger;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddFastEndpoints();
+builder.Services
+    .AddFastEndpoints()
+    .SwaggerDocument(o =>
+    {
+        o.MaxEndpointVersion = 1;
+        o.DocumentSettings = s =>
+        {
+            s.DocumentName = "v1";
+            s.Version = "v1";
+        };
+    });
 
 // Logging
 Log.Logger = new LoggerConfiguration()
@@ -13,56 +22,24 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Services.AddSerilog();
 
-builder.Services.AddApiVersioning(options =>
-{
-    options.ApiVersionReader = new UrlSegmentApiVersionReader();
-})
-.AddApiExplorer(options =>
-{
-    options.GroupNameFormat = "'v'VVV";
-    options.SubstituteApiVersionInUrl = true;
-});
-
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-app.UseFastEndpoints();
-
-var apiVersionSet = app.NewApiVersionSet()
-    .HasApiVersion(new ApiVersion(1))
-    .HasApiVersion(new ApiVersion(2))
-    .ReportApiVersions()
-    .Build();
+app.UseFastEndpoints(c =>
+{
+    c.Versioning.Prefix = "v";
+    c.Versioning.PrependToRoute = true;
+    c.Endpoints.RoutePrefix = "api";
+})
+.UseSwaggerGen();
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
 
-var apiVersionGroupBuilder = app.MapGroup("api/v{version:apiVersion}")
-    .WithApiVersionSet(apiVersionSet);
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        var descriptions = app.DescribeApiVersions();
-        foreach (var description in descriptions)
-        {
-            var url = $"/swagger/{description.GroupName}/swagger.json";
-            var name = description.GroupName.ToUpperInvariant();
-            options.SwaggerEndpoint(url, name);
-        }
-    });
+    app.UseSwaggerUI();
 }
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int) (TemperatureC / 0.5556);
-}
