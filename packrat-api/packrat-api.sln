@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "packrat.webapi", "packrat.w
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "packrat.databaseMigrations", "packrat.databaseMigrations\packrat.databaseMigrations.csproj", "{A2CE568E-BA7C-4EA2-B5A1-EE2B9FD207C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "packrat.dataAccessLayer", "packrat.dataAccessLayer\packrat.dataAccessLayer.csproj", "{8C7FCF38-61A6-4CBA-9A81-9A1D86A4010D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{A2CE568E-BA7C-4EA2-B5A1-EE2B9FD207C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2CE568E-BA7C-4EA2-B5A1-EE2B9FD207C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2CE568E-BA7C-4EA2-B5A1-EE2B9FD207C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C7FCF38-61A6-4CBA-9A81-9A1D86A4010D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C7FCF38-61A6-4CBA-9A81-9A1D86A4010D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C7FCF38-61A6-4CBA-9A81-9A1D86A4010D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C7FCF38-61A6-4CBA-9A81-9A1D86A4010D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
