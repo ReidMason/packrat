@@ -45,7 +45,7 @@ if (app.Environment.IsDevelopment())
 }
 
 
-var connectionString = app.Configuration.GetConnectionString("DatabaseConnection");
+var connectionString = app.Configuration.GetValue<string>("DatabaseConnection");
 if (connectionString is null) {
     Log.Fatal("No connection string found");
     return;
