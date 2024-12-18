@@ -2,7 +2,6 @@ using FastEndpoints;
 using FastEndpoints.Swagger;
 using packrat.databaseMigrations;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services
@@ -43,7 +42,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 
 var connectionString = app.Configuration.GetValue<string>("DatabaseConnection");
 if (connectionString is null) {
