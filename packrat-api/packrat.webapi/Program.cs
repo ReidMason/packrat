@@ -1,6 +1,10 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using Microsoft.EntityFrameworkCore;
+using packrat.dataAccessLayer.Context;
+using packrat.dataAccessLayer.Services;
 using packrat.databaseMigrations;
+using packrat.Services.Services.Registration;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +19,7 @@ builder.Services
             s.Version = "v1";
         };
     });
+builder.Services.AddSwaggerGen();
 
 // Logging
 Log.Logger = new LoggerConfiguration()
@@ -23,7 +28,13 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Services.AddSerilog();
 
+// Connection strings
+var connectionString = builder.Configuration.GetValue<string>("DatabaseConnection");
+
 // Add services to the container.
+builder.Services.AddDbContext<PackratContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddTransient<IUserDbService, UserDbService>();
+builder.Services.AddTransient<IRegistrationService, RegistrationService>();
 
 var app = builder.Build();
 app.UseFastEndpoints(c =>
@@ -43,7 +54,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-var connectionString = app.Configuration.GetValue<string>("DatabaseConnection");
 if (connectionString is null) {
     Log.Fatal("No connection string found");
     return;

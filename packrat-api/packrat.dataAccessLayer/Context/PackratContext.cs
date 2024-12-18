@@ -33,6 +33,7 @@ public partial class PackratContext : DbContext
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("date_modified");
             entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.Password).HasColumnName("password");
         });
 
         modelBuilder.Entity<VersionInfo>(entity =>

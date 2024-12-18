@@ -8,7 +8,7 @@ public interface IUserDbService
 {
     public Task<User?> GetUserById(int id);
     public Task<User?> GetUserByEmail(string email);
-    public Task<User?> CreateUser(User user);
+    public Task<User> CreateUser(string email, string password);
 }
 
 public class UserDbService : IUserDbService
@@ -32,8 +32,13 @@ public class UserDbService : IUserDbService
         return await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
     }
 
-    public async Task<User?> CreateUser(User user)
+    public async Task<User> CreateUser(string email, string password)
     {
+        var user = new User
+        {
+            Email = email,
+            Password = password
+        };
         var newUser = await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
         return newUser.Entity;

@@ -21,6 +21,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\packrat.databaseMigrations\packrat.databaseMigrations.csproj" />
+      <ProjectReference Include="..\packrat.Services\packrat.Services.csproj" />
     </ItemGroup>
 
 </Project>
