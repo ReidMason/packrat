@@ -9,7 +9,9 @@ public class CreateUsersTable : Migration
     {
         Create.Table("users")
             .WithColumn("id").AsInt64().PrimaryKey().Identity()
-            .WithColumn("username").AsString();
+            .WithColumn("email").AsString().Unique().NotNullable()
+            .WithColumn("date_created").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime)
+            .WithColumn("date_modified").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime);
     }
 
     public override void Down()
