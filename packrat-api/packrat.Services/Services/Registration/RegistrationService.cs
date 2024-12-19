@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using Microsoft.Extensions.Logging;
 using packrat.dataAccessLayer.Services;
 using packrat.Services.Services.Registration.Models;
@@ -13,17 +14,19 @@ public class RegisterValidationErrors
 {
     public List<string> Email { get; set; } = [];
     public List<string> Password { get; set; } = [];
+
+    public bool IsError => Email.Count > 0 || Password.Count > 0;
 }
 
 public class Result<T, E>
 {
     public T? Data { get; }
-    public E? Error { get; }
+    public E? Errors { get; }
 
-    public Result(T? data, E? error)
+    public Result(T? data, E? errors)
     {
         Data = data;
-        Error = error;
+        Errors = errors;
     }
 }
 
@@ -42,12 +45,24 @@ public class RegistrationService : IRegistrationService
    {
        var validationErrors = new RegisterValidationErrors();
 
+       try
+       {
+           email = new MailAddress(email).Address;
+       }
+       catch (FormatException)
+       {
+           validationErrors.Email.Add("Invalid Email Address");
+       }
+
        var existingUser = await _userService.GetUserByEmail(email);
        if (existingUser is not null)
        {
-           validationErrors.Email.Add($"Email {email} is already registered");
-           return new Result<RegisteredUser, RegisterValidationErrors>(null, validationErrors);
+           validationErrors.Email.Add("Email already registered");
        }
+
+       if (password.Length < 6) validationErrors.Password.Add("Password must be at least 6 characters");
+
+       if (validationErrors.IsError) return new Result<RegisteredUser, RegisterValidationErrors>(null, validationErrors);
 
        var newUser = await _userService.CreateUser(email, password);
        return new Result<RegisteredUser, RegisterValidationErrors>(new RegisteredUser(newUser), null);

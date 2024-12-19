@@ -6,7 +6,7 @@ using packrat.webapi.Endpoints.Authentication.Dtos;
 
 namespace packrat.webapi.Endpoints.Authentication;
 
-public class RegisterEndpoint : Endpoint<RegisterRequestDto, Results<Ok<RegisteredUser>, ProblemDetails, ProblemHttpResult>>
+public class RegisterEndpoint : Endpoint<RegisterRequestDto, Results<Ok<RegisteredUser>, RegisterRequestProblemDetailsResponseDto, ProblemHttpResult>>
 {
     private readonly IRegistrationService _registrationService;
 
@@ -22,18 +22,12 @@ public class RegisterEndpoint : Endpoint<RegisterRequestDto, Results<Ok<Register
         AllowAnonymous();
     }
 
-    public override async Task<Results<Ok<RegisteredUser>, ProblemDetails, ProblemHttpResult>> ExecuteAsync(RegisterRequestDto dto, CancellationToken ct)
+    public override async Task<Results<Ok<RegisteredUser>, RegisterRequestProblemDetailsResponseDto, ProblemHttpResult>> ExecuteAsync(RegisterRequestDto dto, CancellationToken ct)
     {
         try
         {
             var newUserResult = await _registrationService.Register(dto.Email, dto.Password);
-            if (newUserResult.Error is not null)
-            {
-                foreach (var validationFailure in newUserResult.Error.Email)
-                    AddError(r => r.Email, validationFailure);
-
-                return new ProblemDetails(ValidationFailures);
-            }
+            if (newUserResult.Errors is not null) return new RegisterRequestProblemDetailsResponseDto(newUserResult.Errors);
 
             return TypedResults.Ok(newUserResult.Data);
         }
