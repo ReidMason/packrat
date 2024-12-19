@@ -1,4 +1,4 @@
-namespace packrat.webapi.Endpoints.Authentication.Dtos;
+namespace packrat.webapi.Endpoints.Registration.Dtos;
 
 public class RegisterRequestDto
 {

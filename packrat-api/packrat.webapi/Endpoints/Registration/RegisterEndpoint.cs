@@ -2,9 +2,9 @@ using FastEndpoints;
 using Microsoft.AspNetCore.Http.HttpResults;
 using packrat.Services.Services.Registration;
 using packrat.Services.Services.Registration.Models;
-using packrat.webapi.Endpoints.Authentication.Dtos;
+using packrat.webapi.Endpoints.Registration.Dtos;
 
-namespace packrat.webapi.Endpoints.Authentication;
+namespace packrat.webapi.Endpoints.Registration;
 
 public class RegisterEndpoint : Endpoint<RegisterRequestDto, Results<Ok<RegisteredUser>, RegisterRequestProblemDetailsResponseDto, ProblemHttpResult>>
 {

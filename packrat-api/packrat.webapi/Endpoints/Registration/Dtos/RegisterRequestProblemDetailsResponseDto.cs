@@ -2,7 +2,7 @@ using System.Net;
 using FastEndpoints;
 using packrat.Services.Services.Registration;
 
-namespace packrat.webapi.Endpoints.Authentication.Dtos;
+namespace packrat.webapi.Endpoints.Registration.Dtos;
 
 public class RegisterRequestProblemDetailsResponseDto : IResult
 {
