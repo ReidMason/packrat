@@ -1,4 +1,3 @@
-using System.Net;
 using packrat.Services.Services.Registration;
 
 namespace packrat.webapi.Endpoints.Registration.Dtos;
