@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using Microsoft.Extensions.Logging;
 using packrat.dataAccessLayer.Services;
+using packrat.Services.Common;
 using packrat.Services.Services.Registration.Models;
 
 namespace packrat.Services.Services.Registration;
@@ -12,22 +13,10 @@ public interface IRegistrationService
 
 public class RegisterValidationErrors
 {
-    public List<string> Email { get; set; } = [];
-    public List<string> Password { get; set; } = [];
+    public List<string> Email { get; } = [];
+    public List<string> Password { get; } = [];
 
     public bool IsError => Email.Count > 0 || Password.Count > 0;
-}
-
-public class Result<T, E>
-{
-    public T? Data { get; }
-    public E? Errors { get; }
-
-    public Result(T? data, E? errors)
-    {
-        Data = data;
-        Errors = errors;
-    }
 }
 
 public class RegistrationService : IRegistrationService
