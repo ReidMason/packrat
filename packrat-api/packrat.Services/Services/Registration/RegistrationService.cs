@@ -34,20 +34,12 @@ public class RegistrationService : IRegistrationService
    {
        var validationErrors = new RegisterValidationErrors();
 
-       try
-       {
-           email = new MailAddress(email).Address;
-       }
-       catch (FormatException)
-       {
-           validationErrors.Email.Add("Invalid Email Address");
-       }
+       var emailValidation = ValidateEmail(email);
+       if (!emailValidation.isValid) validationErrors.Email.Add("Invalid Email Address");
+       email = emailValidation.email;
 
        var existingUser = await _userService.GetUserByEmail(email);
-       if (existingUser is not null)
-       {
-           validationErrors.Email.Add("Email already registered");
-       }
+       if (existingUser is not null) validationErrors.Email.Add("Email already registered");
 
        if (password.Length < 6) validationErrors.Password.Add("Password must be at least 6 characters");
 
@@ -55,5 +47,18 @@ public class RegistrationService : IRegistrationService
 
        var newUser = await _userService.CreateUser(email, password);
        return new Result<RegisteredUser, RegisterValidationErrors>(new RegisteredUser(newUser), null);
+   }
+
+   private (bool isValid, string email) ValidateEmail(string email)
+   {
+       try
+       {
+           email = new MailAddress(email).Address;
+           return (true, email);
+       }
+       catch (FormatException)
+       {
+           return (false, email);
+       }
    }
 }
