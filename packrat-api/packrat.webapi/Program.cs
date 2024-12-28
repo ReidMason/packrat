@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using packrat.dataAccessLayer.Context;
 using packrat.dataAccessLayer.Services;
 using packrat.databaseMigrations;
+using packrat.Services.Services.Authentication;
 using packrat.Services.Services.Registration;
 using Serilog;
 
@@ -35,6 +36,7 @@ var connectionString = builder.Configuration.GetValue<string>("DatabaseConnectio
 builder.Services.AddDbContext<PackratContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddTransient<IUserDbService, UserDbService>();
 builder.Services.AddTransient<IRegistrationService, RegistrationService>();
+builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 
 var app = builder.Build();
 app.UseFastEndpoints(c =>
