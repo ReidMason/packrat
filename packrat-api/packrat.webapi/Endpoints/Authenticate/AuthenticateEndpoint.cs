@@ -34,8 +34,8 @@ public class AuthenticateEndpoint : Endpoint<AuthenticateRequestDto, Results<Ok<
         }
         catch (Exception ex)
         {
-            Logger.LogError("Error registering user. Exception: {}", ex);
-            return TypedResults.Problem();
+            Logger.LogError("Error authenticating user. Exception: {}", ex);
+            return TypedResults.BadRequest();
         }
     }
 }
