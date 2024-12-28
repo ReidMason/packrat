@@ -25,6 +25,6 @@ public class AuthenticationService : IAuthenticationService
        var user = await _userService.GetUserByEmail(email);
        if (user == null) return false;
 
-       return BCrypt.Net.BCrypt.Verify(password, user.Password);
+       return BCrypt.Net.BCrypt.EnhancedVerify(password, user.Password);
    }
 }
