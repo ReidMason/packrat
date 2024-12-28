@@ -43,9 +43,11 @@ public class RegistrationService : IRegistrationService
 
        if (password.Length < 6) validationErrors.Password.Add("Password must be at least 6 characters");
 
+       var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+
        if (validationErrors.IsError) return new Result<RegisteredUser, RegisterValidationErrors>(null, validationErrors);
 
-       var newUser = await _userService.CreateUser(email, password);
+       var newUser = await _userService.CreateUser(email, hashedPassword);
        return new Result<RegisteredUser, RegisterValidationErrors>(new RegisteredUser(newUser), null);
    }
 
