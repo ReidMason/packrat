@@ -1,0 +1,10 @@
+[package]
+name = "packrat_domain"
+version = "0.1.0"
+edition = "2021"
+description = "Domain model: no IO, no infrastructure dependencies."
+
+[dependencies]
+# Keep empty: application/infrastructure must not be pulled in here.
+# (Any accidental `use packrat_infrastructure::...` would require adding
+#  that crate here, which is the sign something is in the wrong layer.)

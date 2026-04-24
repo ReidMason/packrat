@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "crates/packrat_domain",
+    "crates/packrat_infrastructure",
+    "crates/packrat",
+]
+default-members = ["crates/packrat"]
+resolver = "2"

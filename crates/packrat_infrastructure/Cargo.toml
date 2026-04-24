@@ -1,0 +1,10 @@
+[package]
+name = "packrat_infrastructure"
+version = "0.1.0"
+edition = "2021"
+description = "Adapters: DB, HTTP, external services. Depends on domain, never the reverse."
+
+[dependencies]
+packrat_domain = { path = "../packrat_domain" }
+# sqlx, tokio, etc. will live here later—not in `packrat_domain`.
+
