@@ -1,7 +1,7 @@
 [package]
 name = "packrat_infrastructure"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Adapters: DB, HTTP, external services. Depends on domain, never the reverse."
 
 [dependencies]
