@@ -1,11 +1,12 @@
-//! `packrat` (binary): composition root. Safe to use both domain and infrastructure.
-//! The `packrat_domain` crate is forbidden from depending on this or `packrat_infrastructure`.
+//! Composition root: the only place `infrastructure` and the `packrat_application` layer are wired.
 
 use packrat_domain::Item;
-use packrat_infrastructure::fetch_example_item;
+use packrat_infrastructure::StubItemQuery;
+use packrat_application::get_example_item;
 
 fn main() {
-    if let Some(item) = fetch_example_item() {
+    let item_query = StubItemQuery;
+    if let Some(item) = get_example_item(&item_query) {
         println!("#{:?}: {:?}", item.id, item.name);
     }
     let local = Item::new(1, String::from("Test"));

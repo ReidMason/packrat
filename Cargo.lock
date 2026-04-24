@@ -6,8 +6,16 @@ version = 4
 name = "packrat"
 version = "0.1.0"
 dependencies = [
+ "packrat_application",
  "packrat_domain",
  "packrat_infrastructure",
+]
+
+[[package]]
+name = "packrat_application"
+version = "0.1.0"
+dependencies = [
+ "packrat_domain",
 ]
 
 [[package]]
@@ -18,5 +26,6 @@ version = "0.1.0"
 name = "packrat_infrastructure"
 version = "0.1.0"
 dependencies = [
+ "packrat_application",
  "packrat_domain",
 ]

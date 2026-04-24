@@ -2,8 +2,9 @@
 name = "packrat"
 version = "0.1.0"
 edition = "2021"
-description = "Entrypoint: wire domain + infrastructure. Only place both meet."
+description = "Entrypoint: wire use cases, domain, and infrastructure."
 
 [dependencies]
 packrat_domain = { path = "../packrat_domain" }
+packrat_application = { path = "../packrat_application" }
 packrat_infrastructure = { path = "../packrat_infrastructure" }
