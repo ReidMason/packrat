@@ -1,0 +1,8 @@
+[package]
+name = "packrat_application"
+version = "0.1.0"
+edition = "2021"
+description = "Application layer: ports, use case handlers. Depends on domain only; no infrastructure."
+
+[dependencies]
+packrat_domain = { path = "../packrat_domain" }

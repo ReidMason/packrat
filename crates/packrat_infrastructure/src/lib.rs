@@ -1,9 +1,13 @@
-//! Adapters: persistence, APIs, OS. This crate may depend on `packrat_domain` only
-//! (plus driver crates). `packrat_domain` must not depend on this crate.
+//! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
 use packrat_domain::Item;
+use packrat_application::ItemQueryPort;
 
-/// Example secondary adapter. Real code would use a database client from here.
-pub fn fetch_example_item() -> Option<Item> {
-    Some(Item::new(1, "from infrastructure stub".to_string()))
+/// Placeholder “database” for wiring demos and tests.
+pub struct StubItemQuery;
+
+impl ItemQueryPort for StubItemQuery {
+    fn fetch_example(&self) -> Option<Item> {
+        Some(Item::new(1, "from infrastructure stub".to_string()))
+    }
 }

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/packrat_domain",
+    "crates/packrat_application",
     "crates/packrat_infrastructure",
     "crates/packrat",
 ]
