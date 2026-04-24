@@ -1,19 +1,29 @@
-#[derive(Debug)]
-pub struct ItemName(#[allow(dead_code)] String);
+#[derive(Debug, PartialEq, Eq)]
+pub struct ItemName(String);
 
-#[derive(Debug)]
-pub struct ItemId(#[allow(dead_code)] u64);
+impl ItemName {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+}
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ItemId(u64);
+
+impl ItemId {
+    pub fn new(id: u64) -> Self {
+        Self(id)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Item {
     pub id: ItemId,
     pub name: ItemName,
 }
 
 impl Item {
-    pub fn new(id: u64, name: String) -> Self {
-        Self {
-            id: ItemId(id),
-            name: ItemName(name),
-        }
+    pub fn new(id: ItemId, name: ItemName) -> Self {
+        Self { id, name }
     }
 }

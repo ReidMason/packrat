@@ -1,6 +1,6 @@
 //! Composition root: the only place `infrastructure` and the `packrat_application` layer are wired.
 
-use packrat_domain::Item;
+use packrat_domain::{Item, ItemId, ItemName};
 use packrat_infrastructure::StubItemQuery;
 use packrat_application::get_example_item;
 
@@ -9,6 +9,6 @@ fn main() {
     if let Some(item) = get_example_item(&item_query) {
         println!("#{:?}: {:?}", item.id, item.name);
     }
-    let local = Item::new(1, String::from("Test"));
+    let local = Item::new(ItemId::new(1), ItemName::new("Test"));
     println!("#{:?}: {:?}", local.id, local.name);
 }
