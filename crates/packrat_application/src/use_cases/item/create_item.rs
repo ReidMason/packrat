@@ -37,7 +37,7 @@ mod tests {
         let item = execute(
             &port,
             ItemName::from("alpha"),
-            ItemPlacement::InLocation(LocationId::new(1)),
+            ItemPlacement::InLocation(LocationId::from(1)),
         )
         .await;
         assert_eq!(item.id, ItemId::from(99));

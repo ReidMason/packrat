@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let created = create_item(
         &item_command,
         ItemName::from("from use case"),
-        ItemPlacement::InLocation(LocationId::new(1)),
+        ItemPlacement::InLocation(LocationId::from(1)),
     )
     .await;
     println!("#{:?}: {:?}", created.id, created.name);

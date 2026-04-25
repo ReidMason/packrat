@@ -74,7 +74,7 @@ mod item_tests {
         let mut item = Item::new(
             ItemId::from(1),
             ItemName::from("Fork"),
-            InventoryId::Location(LocationId::new(1)),
+            InventoryId::Location(LocationId::from(1)),
         );
         item.name = ItemName::from("Spoon");
         assert_eq!(item.name, ItemName::from("Spoon"))

@@ -6,8 +6,8 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BucketId(i64);
 
-impl BucketId {
-    pub const fn new(id: i64) -> Self {
+impl From<i64> for BucketId {
+    fn from(id: i64) -> Self {
         Self(id)
     }
 }

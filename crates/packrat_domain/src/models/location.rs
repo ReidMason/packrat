@@ -1,8 +1,8 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LocationId(i64);
 
-impl LocationId {
-    pub const fn new(id: i64) -> Self {
+impl From<i64> for LocationId {
+    fn from(id: i64) -> Self {
         Self(id)
     }
 }

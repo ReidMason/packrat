@@ -20,7 +20,7 @@ mod tests {
         Item::new(
             id,
             ItemName::from("from infrastructure stub"),
-            InventoryId::Location(LocationId::new(1)),
+            InventoryId::Location(LocationId::from(1)),
         )
     }
 
