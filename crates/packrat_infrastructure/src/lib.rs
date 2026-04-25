@@ -1,10 +1,10 @@
 //! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
 use packrat_application::ItemQueryPort;
-use packrat_domain::{Item, ItemId, ItemName};
+use packrat_domain::item::{Item, ItemId, ItemName};
 
 fn stub_item(id: ItemId) -> Item {
-    Item::new(id, ItemName::new("from infrastructure stub"))
+    Item::new(id, ItemName::from("from infrastructure stub"))
 }
 
 /// Placeholder “database” for wiring demos and tests.

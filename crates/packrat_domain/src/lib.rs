@@ -1,3 +1,4 @@
-pub mod item;
+pub mod models;
 
-pub use item::{Item, ItemId, ItemName};
+pub use models::{bucket, item, location};
+

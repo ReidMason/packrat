@@ -1,4 +1,4 @@
-use packrat_domain::{Item, ItemId};
+use packrat_domain::item::{Item, ItemId};
 
 use crate::ports::ItemQueryPort;
 
@@ -9,12 +9,12 @@ pub fn execute(port: &impl ItemQueryPort, id: ItemId) -> Option<Item> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use packrat_domain::{ItemId, ItemName};
+    use packrat_domain::item::{ItemId, ItemName};
 
     struct MockItemQuery;
 
     fn stub_item(id: ItemId) -> Item {
-        Item::new(id, ItemName::new("from infrastructure stub"))
+        Item::new(id, ItemName::from("from infrastructure stub"))
     }
 
     impl ItemQueryPort for MockItemQuery {
