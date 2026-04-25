@@ -1,8 +1,7 @@
 name: Coverage
 
 on:
-  push:
-    branches: [main]
+  workflow_call:
   pull_request:
 
 permissions:
@@ -21,6 +20,8 @@ jobs:
           tool: cargo-tarpaulin
 
       - name: Generate coverage
+        env:
+          SQLX_OFFLINE: "true"
         run: >-
           cargo tarpaulin
           --workspace
