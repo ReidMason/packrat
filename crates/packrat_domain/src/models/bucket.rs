@@ -50,7 +50,7 @@ impl std::ops::DerefMut for BucketName {
 pub struct Bucket {
     pub id: BucketId,
     pub name: BucketName,
-    pub parent_id: Option<InventoryId>,
+    pub parent: InventoryId,
 }
 
 impl Stock for Bucket {
