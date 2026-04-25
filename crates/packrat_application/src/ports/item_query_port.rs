@@ -1,6 +1,5 @@
-use packrat_domain::Item;
+use packrat_domain::{Item, ItemId};
 
-/// What use cases need from the outside world to look up items. Infrastructure implements this.
 pub trait ItemQueryPort: Send + Sync {
-    fn fetch_example(&self) -> Option<Item>;
+    fn get_item_by_id(&self, id: ItemId) -> Option<Item>;
 }
