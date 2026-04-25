@@ -15,7 +15,7 @@ mod tests {
     struct MockItemQuery;
 
     fn stub_item(id: ItemId) -> Item {
-        Item::new(id, ItemName::from("from infrastructure stub"), None)
+        Item::new(id, ItemName::from("from infrastructure stub"))
     }
 
     impl ItemQueryPort for MockItemQuery {

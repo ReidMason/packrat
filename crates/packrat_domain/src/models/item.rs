@@ -1,6 +1,6 @@
-use crate::inventory::InventoryId;
+use crate::stock::{Stock, StockId};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct ItemId(u64);
 
 impl ItemId {
@@ -42,12 +42,17 @@ impl std::ops::DerefMut for ItemName {
 pub struct Item {
     pub id: ItemId,
     pub name: ItemName,
-    pub parent: Option<InventoryId>,
 }
 
 impl Item {
-    pub fn new(id: ItemId, name: ItemName, parent: Option<InventoryId>) -> Self {
-        Self { id, name, parent }
+    pub fn new(id: ItemId, name: ItemName) -> Self {
+        Self { id, name }
+    }
+}
+
+impl Stock for Item {
+    fn id(&self) -> crate::stock::StockId {
+        StockId::Item(self.id)
     }
 }
 
@@ -57,7 +62,7 @@ mod item_tests {
 
     #[test]
     fn change_name() {
-        let mut item = Item::new(ItemId::new(1), ItemName::from("Fork"), None);
+        let mut item = Item::new(ItemId::new(1), ItemName::from("Fork"));
         item.name = ItemName::from("Spoon");
         assert_eq!(item.name, ItemName::from("Spoon"))
     }

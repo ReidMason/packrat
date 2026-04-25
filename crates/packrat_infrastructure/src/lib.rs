@@ -6,7 +6,7 @@ use packrat_application::{ItemCommandPort, ItemQueryPort};
 use packrat_domain::item::{Item, ItemId, ItemName};
 
 fn stub_item(id: ItemId) -> Item {
-    Item::new(id, ItemName::from("from infrastructure stub"), None)
+    Item::new(id, ItemName::from("from infrastructure stub"))
 }
 
 /// Placeholder “database” for wiring demos and tests.
@@ -37,6 +37,6 @@ impl Default for StubItemCommand {
 impl ItemCommandPort for StubItemCommand {
     fn create_item(&self, name: ItemName) -> Item {
         let id = ItemId::new(self.next_id.fetch_add(1, Ordering::Relaxed));
-        Item::new(id, name, None)
+        Item::new(id, name)
     }
 }

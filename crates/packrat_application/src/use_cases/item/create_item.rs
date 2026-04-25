@@ -16,7 +16,7 @@ mod tests {
 
     impl ItemCommandPort for MockItemCommand {
         fn create_item(&self, name: ItemName) -> Item {
-            Item::new(ItemId::new(99), name, None)
+            Item::new(ItemId::new(99), name)
         }
     }
 
