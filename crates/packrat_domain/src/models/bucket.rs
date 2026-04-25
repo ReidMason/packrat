@@ -1,4 +1,4 @@
-use super::Parent;
+use crate::inventory::InventoryId;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BucketId(u64);
@@ -41,5 +41,5 @@ impl std::ops::DerefMut for BucketName {
 pub struct Bucket {
     pub id: BucketId,
     pub name: BucketName,
-    pub parent: Option<Parent>,
+    pub parent: Option<InventoryId>,
 }

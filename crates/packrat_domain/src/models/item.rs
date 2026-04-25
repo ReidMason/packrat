@@ -1,6 +1,5 @@
-use super::Parent;
+use crate::inventory::InventoryId;
 
-// TODO: Id's should probably be a UUID
 #[derive(Debug, PartialEq, Eq)]
 pub struct ItemId(u64);
 
@@ -43,11 +42,11 @@ impl std::ops::DerefMut for ItemName {
 pub struct Item {
     pub id: ItemId,
     pub name: ItemName,
-    pub parent: Option<Parent>,
+    pub parent: Option<InventoryId>,
 }
 
 impl Item {
-    pub fn new(id: ItemId, name: ItemName, parent: Option<Parent>) -> Self {
+    pub fn new(id: ItemId, name: ItemName, parent: Option<InventoryId>) -> Self {
         Self { id, name, parent }
     }
 }
