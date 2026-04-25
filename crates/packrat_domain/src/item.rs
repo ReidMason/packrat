@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ItemId(u64);
 
 impl ItemId {
@@ -7,7 +7,7 @@ impl ItemId {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ItemName(String);
 
 impl ItemName {
@@ -16,30 +16,15 @@ impl ItemName {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Item {
-    id: ItemId,
-    name: ItemName,
+    pub id: ItemId,
+    pub name: ItemName,
 }
 
 impl Item {
     pub fn new(id: ItemId, name: ItemName) -> Self {
         Self { id, name }
-    }
-
-    pub fn id(&self) -> &ItemId {
-        &self.id
-    }
-
-    pub fn name(&self) -> &ItemName {
-        &self.name
-    }
-
-    pub fn id_mut(&mut self) -> &mut ItemId {
-        &mut self.id
-    }
-
-    pub fn name_mut(&mut self) -> &mut ItemName {
-        &mut self.name
     }
 }
 
@@ -64,7 +49,7 @@ mod item_tests {
     #[test]
     fn change_name() {
         let mut item = Item::new(ItemId::new(1), ItemName::new("Fork"));
-        *item.name_mut() = ItemName::new("Spoon");
-        assert_eq!(item.name(), &ItemName::new("Spoon"))
+        item.name = ItemName::new("Spoon");
+        assert_eq!(item.name, ItemName::new("Spoon"))
     }
 }
