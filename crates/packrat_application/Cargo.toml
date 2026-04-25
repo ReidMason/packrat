@@ -5,4 +5,8 @@ edition = "2024"
 description = "Application layer: ports, use case handlers. Depends on domain only; no infrastructure."
 
 [dependencies]
+async-trait = "0.1"
 packrat_domain = { path = "../packrat_domain" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

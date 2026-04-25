@@ -1,6 +1,11 @@
 //! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
+mod postgres;
+
+use async_trait::async_trait;
 use std::sync::atomic::{AtomicU64, Ordering};
+
+pub use postgres::{connect_pool, run_migrations, PostgresItemCommand};
 
 use packrat_application::{ItemCommandPort, ItemQueryPort};
 use packrat_domain::item::{Item, ItemId, ItemName};
@@ -34,8 +39,9 @@ impl Default for StubItemCommand {
     }
 }
 
+#[async_trait]
 impl ItemCommandPort for StubItemCommand {
-    fn create_item(&self, name: ItemName) -> Item {
+    async fn create_item(&self, name: ItemName) -> Item {
         let id = ItemId::new(self.next_id.fetch_add(1, Ordering::Relaxed));
         Item::new(id, name)
     }

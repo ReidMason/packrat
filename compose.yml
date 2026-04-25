@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
     image: packrat:local
     environment:
-      DATABASE_URL: postgres://packrat:packrat@postgres:5432/packrat
+      DATABASE_URL: postgres://packrat:packrat@postgres:5432/packrat?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
