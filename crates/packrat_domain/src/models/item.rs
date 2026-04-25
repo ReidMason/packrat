@@ -1,11 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
-pub struct ItemId(u64);
-
-impl ItemId {
-    pub fn new(id: u64) -> Self {
-        Self(id)
-    }
-}
+use super::{Id, Parent};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ItemName(String);
@@ -38,23 +31,24 @@ impl std::ops::DerefMut for ItemName {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Item {
-    pub id: ItemId,
+    pub id: Id,
     pub name: ItemName,
+    pub parent: Option<Parent>,
 }
 
 impl Item {
-    pub fn new(id: ItemId, name: ItemName) -> Self {
-        Self { id, name }
+    pub fn new(id: Id, name: ItemName, parent: Option<Parent>) -> Self {
+        Self { id, name, parent }
     }
 }
 
 #[cfg(test)]
 mod item_tests {
-    use crate::item::{Item, ItemId, ItemName};
+    use crate::item::{Item, Id, ItemName};
 
     #[test]
     fn change_name() {
-        let mut item = Item::new(ItemId::new(1), ItemName::from("Fork"));
+        let mut item = Item::new(Id::new(1), ItemName::from("Fork"), None);
         item.name = ItemName::from("Spoon");
         assert_eq!(item.name, ItemName::from("Spoon"))
     }

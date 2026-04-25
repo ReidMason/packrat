@@ -1,13 +1,4 @@
-use crate::location::LocationId;
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct BucketId(u64);
-
-impl BucketId {
-    pub fn new(id: u64) -> Self {
-        Self(id)
-    }
-}
+use super::{Id, Parent};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BucketName(String);
@@ -39,7 +30,7 @@ impl std::ops::DerefMut for BucketName {
 }
 
 pub struct Bucket {
-    pub id: BucketId,
+    pub id: Id,
     pub name: BucketName,
-    pub location_id: LocationId,
+    pub parent: Option<Parent>,
 }
