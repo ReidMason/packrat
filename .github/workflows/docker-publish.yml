@@ -16,14 +16,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Run tests
-        run: cargo test --workspace
+    uses: ./.github/workflows/tests.yml
 
   publish:
     needs: test
