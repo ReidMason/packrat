@@ -1,11 +1,15 @@
 use crate::location::LocationId;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BucketId(u64);
 
 impl BucketId {
-    pub fn new(id: u64) -> Self {
+    pub const fn new(id: u64) -> Self {
         Self(id)
+    }
+
+    pub const fn raw(self) -> u64 {
+        self.0
     }
 }
 

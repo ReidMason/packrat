@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use packrat_application::ItemCommandPort;
+use packrat_application::{ItemCommandPort, ItemPlacement};
 use packrat_domain::item::{Item, ItemId, ItemName};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -16,14 +16,25 @@ impl PostgresItemCommand {
 
 #[async_trait]
 impl ItemCommandPort for PostgresItemCommand {
-    async fn create_item(&self, name: ItemName) -> Item {
-        let id = sqlx::query_scalar!(
-            "INSERT INTO items (name) VALUES ($1) RETURNING id",
-            name.as_str()
-        )
-        .fetch_one(&self.pool)
-        .await
-        .expect("insert item");
+    async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
+        let id: i64 = match placement {
+            ItemPlacement::InLocation(location_id) => sqlx::query_scalar!(
+                "INSERT INTO items (name, location_id) VALUES ($1, $2) RETURNING id",
+                name.as_str(),
+                location_id.raw() as i64
+            )
+            .fetch_one(&self.pool)
+            .await
+            .expect("insert item"),
+            ItemPlacement::InBucket(bucket_id) => sqlx::query_scalar!(
+                "INSERT INTO items (name, bucket_id) VALUES ($1, $2) RETURNING id",
+                name.as_str(),
+                bucket_id.raw() as i64
+            )
+            .fetch_one(&self.pool)
+            .await
+            .expect("insert item"),
+        };
         Item::new(ItemId::new(id as u64), name)
     }
 }

@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use postgres::{connect_pool, run_migrations, PostgresItemCommand};
 
-use packrat_application::{ItemCommandPort, ItemQueryPort};
+use packrat_application::{ItemCommandPort, ItemPlacement, ItemQueryPort};
 use packrat_domain::item::{Item, ItemId, ItemName};
 
 fn stub_item(id: ItemId) -> Item {
@@ -41,7 +41,7 @@ impl Default for StubItemCommand {
 
 #[async_trait]
 impl ItemCommandPort for StubItemCommand {
-    async fn create_item(&self, name: ItemName) -> Item {
+    async fn create_item(&self, name: ItemName, _placement: ItemPlacement) -> Item {
         let id = ItemId::new(self.next_id.fetch_add(1, Ordering::Relaxed));
         Item::new(id, name)
     }
