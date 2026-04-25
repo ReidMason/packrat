@@ -1,4 +1,13 @@
-use super::{Id, Parent};
+use super::Parent;
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct BucketId(u64);
+
+impl BucketId {
+    pub fn new(id: u64) -> Self {
+        Self(id)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BucketName(String);
@@ -30,7 +39,7 @@ impl std::ops::DerefMut for BucketName {
 }
 
 pub struct Bucket {
-    pub id: Id,
+    pub id: BucketId,
     pub name: BucketName,
     pub parent: Option<Parent>,
 }

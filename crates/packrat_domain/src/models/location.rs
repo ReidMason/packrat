@@ -1,4 +1,11 @@
-use super::Id;
+#[derive(Debug, PartialEq, Eq)]
+pub struct LocationId(u64);
+
+impl LocationId {
+    pub fn new(id: u64) -> Self {
+        Self(id)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct LocationName(String);
@@ -30,12 +37,12 @@ impl std::ops::DerefMut for LocationName {
 }
 
 pub struct Location {
-    pub id: Id,
+    pub id: LocationId,
     pub name: LocationName,
 }
 
 impl Location {
-    pub fn new(id: Id, name: LocationName) -> Self {
+    pub fn new(id: LocationId, name: LocationName) -> Self {
         Self { id, name }
     }
 }

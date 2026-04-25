@@ -8,14 +8,15 @@ pub fn execute(port: &impl ItemCommandPort, name: ItemName) -> Item {
 
 #[cfg(test)]
 mod tests {
+    use packrat_domain::item::ItemId;
+
     use super::*;
-    use packrat_domain::models::Id;
 
     struct MockItemCommand;
 
     impl ItemCommandPort for MockItemCommand {
         fn create_item(&self, name: ItemName) -> Item {
-            Item::new(Id::new(99), name, None)
+            Item::new(ItemId::new(99), name, None)
         }
     }
 
@@ -23,7 +24,7 @@ mod tests {
     fn execute_creates_item_via_port() {
         let port = MockItemCommand;
         let item = execute(&port, ItemName::from("alpha"));
-        assert_eq!(item.id, Id::new(99));
+        assert_eq!(item.id, ItemId::new(99));
         assert_eq!(item.name, ItemName::from("alpha"));
     }
 }
