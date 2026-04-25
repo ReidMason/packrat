@@ -1,6 +1,8 @@
 //! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
-use packrat_application::ItemQueryPort;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use packrat_application::{ItemCommandPort, ItemQueryPort};
 use packrat_domain::item::{Item, ItemId, ItemName};
 
 fn stub_item(id: ItemId) -> Item {
@@ -17,5 +19,24 @@ impl ItemQueryPort for StubItemQuery {
         } else {
             None
         }
+    }
+}
+
+pub struct StubItemCommand {
+    next_id: AtomicU64,
+}
+
+impl Default for StubItemCommand {
+    fn default() -> Self {
+        Self {
+            next_id: AtomicU64::new(1),
+        }
+    }
+}
+
+impl ItemCommandPort for StubItemCommand {
+    fn create_item(&self, name: ItemName) -> Item {
+        let id = ItemId::new(self.next_id.fetch_add(1, Ordering::Relaxed));
+        Item::new(id, name)
     }
 }
