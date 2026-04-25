@@ -3,12 +3,18 @@ use crate::{
     stock::{Stock, StockId},
 };
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub struct BucketId(u64);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BucketId(i64);
 
-impl BucketId {
-    pub fn new(id: u64) -> Self {
+impl From<i64> for BucketId {
+    fn from(id: i64) -> Self {
         Self(id)
+    }
+}
+
+impl From<BucketId> for i64 {
+    fn from(id: BucketId) -> Self {
+        id.0
     }
 }
 
@@ -60,36 +66,5 @@ impl Stock for Bucket {
 impl Inventory for Bucket {
     fn find_item(&self, _id: StockId) -> Option<&dyn Stock> {
         todo!()
-    }
-}
-
-#[cfg(test)]
-mod bucket_tests {
-    use super::*;
-    use crate::item::{Item, ItemId, ItemName};
-
-    fn setup_test_buckets() -> Bucket {
-        let sub_bucket_id = BucketId::new(2);
-        let root_bucket_id = BucketId::new(1);
-
-        let item = Item::new(
-            ItemId::new(100),
-            ItemName::from("Spoon"),
-            Some(InventoryId::Bucket(sub_bucket_id)),
-        );
-
-        let sub_bucket = Bucket {
-            id: BucketId::new(2),
-            name: BucketName::from("Little Box"),
-            parent_id: Some(InventoryId::Bucket(root_bucket_id)),
-        };
-
-        let root_bucket = Bucket {
-            id: root_bucket_id,
-            name: BucketName::from("Big Box"),
-            parent_id: None,
-        };
-
-        root_bucket
     }
 }

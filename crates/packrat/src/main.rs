@@ -1,7 +1,8 @@
 //! Composition root: the only place `infrastructure` and the `packrat_application` layer are wired.
 
-use packrat_application::{create_item, get_item};
+use packrat_application::{create_item, get_item, ItemPlacement};
 use packrat_domain::item::{ItemId, ItemName};
+use packrat_domain::location::LocationId;
 use packrat_infrastructure::{
     connect_pool, run_migrations, PostgresItemCommand, StubItemQuery,
 };
@@ -14,11 +15,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     run_migrations(&pool).await?;
 
     let item_command = PostgresItemCommand::new(pool);
-    let created = create_item(&item_command, ItemName::from("from use case")).await;
+    let created = create_item(
+        &item_command,
+        ItemName::from("from use case"),
+        ItemPlacement::InLocation(LocationId::from(1)),
+    )
+    .await;
     println!("#{:?}: {:?}", created.id, created.name);
 
     let item_query = StubItemQuery;
-    if let Some(item) = get_item(&item_query, ItemId::new(1)) {
+    if let Some(item) = get_item(&item_query, ItemId::from(1)) {
         println!("#{:?}: {:?}", item.id, item.name)
     }
 
