@@ -1,0 +1,6 @@
+services:
+  packrat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: packrat:local
