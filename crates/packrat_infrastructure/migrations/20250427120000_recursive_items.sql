@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS buckets CASCADE;
+DROP TABLE IF EXISTS locations CASCADE;
+
+CREATE TABLE items (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id BIGINT REFERENCES items (id) ON DELETE CASCADE
+);
+
+CREATE INDEX items_parent_id_idx ON items (parent_id);

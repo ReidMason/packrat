@@ -24,8 +24,17 @@ mod tests {
     #[tokio::test]
     async fn execute_creates_item_via_port() {
         let port = MockItemCommand;
-        let item = execute(&port, EntityName::from("alpha"), Some(EntityId::from(1))).await;
+        let parent = Some(EntityId::from(1));
+        let item = execute(&port, EntityName::from("alpha"), parent).await;
         assert_eq!(item.id, EntityId::from(99));
         assert_eq!(item.name, EntityName::from("alpha"));
+        assert_eq!(item.parent, parent);
+    }
+
+    #[tokio::test]
+    async fn execute_creates_root_item() {
+        let port = MockItemCommand;
+        let item = execute(&port, EntityName::from("root"), None).await;
+        assert_eq!(item.parent, None);
     }
 }
