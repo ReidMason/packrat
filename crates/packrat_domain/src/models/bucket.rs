@@ -10,9 +10,11 @@ impl BucketId {
     pub const fn new(id: i64) -> Self {
         Self(id)
     }
+}
 
-    pub const fn raw(self) -> i64 {
-        self.0
+impl From<BucketId> for i64 {
+    fn from(id: BucketId) -> Self {
+        id.0
     }
 }
 

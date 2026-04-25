@@ -5,9 +5,11 @@ impl LocationId {
     pub const fn new(id: i64) -> Self {
         Self(id)
     }
+}
 
-    pub const fn raw(self) -> i64 {
-        self.0
+impl From<LocationId> for i64 {
+    fn from(id: LocationId) -> Self {
+        id.0
     }
 }
 

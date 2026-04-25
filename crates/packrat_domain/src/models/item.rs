@@ -7,9 +7,11 @@ impl ItemId {
     pub fn new(id: i64) -> Self {
         Self(id)
     }
+}
 
-    pub const fn raw(self) -> i64 {
-        self.0
+impl From<ItemId> for i64 {
+    fn from(id: ItemId) -> Self {
+        id.0
     }
 }
 

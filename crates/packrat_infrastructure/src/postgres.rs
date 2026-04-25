@@ -23,7 +23,7 @@ impl ItemCommandPort for PostgresItemCommand {
                 let id = sqlx::query_scalar!(
                     "INSERT INTO items (name, location_id) VALUES ($1, $2) RETURNING id",
                     name.as_str(),
-                    location_id.raw()
+                    i64::from(location_id)
                 )
                 .fetch_one(&self.pool)
                 .await
@@ -34,7 +34,7 @@ impl ItemCommandPort for PostgresItemCommand {
                 let id = sqlx::query_scalar!(
                     "INSERT INTO items (name, bucket_id) VALUES ($1, $2) RETURNING id",
                     name.as_str(),
-                    bucket_id.raw()
+                    i64::from(bucket_id)
                 )
                 .fetch_one(&self.pool)
                 .await
