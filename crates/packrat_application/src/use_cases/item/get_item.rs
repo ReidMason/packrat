@@ -2,12 +2,13 @@ use packrat_domain::item::{Entity, EntityId};
 
 use crate::ports::ItemQueryPort;
 
-pub fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> {
-    port.get_item_by_id(id)
+pub async fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> {
+    port.get_item_by_id(id).await
 }
 
 #[cfg(test)]
 mod tests {
+    use async_trait::async_trait;
     use packrat_domain::item::EntityName;
 
     use super::*;
@@ -22,8 +23,9 @@ mod tests {
         )
     }
 
+    #[async_trait]
     impl ItemQueryPort for MockItemQuery {
-        fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
+        async fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
             if id == EntityId::from(1) {
                 Some(stub_item(id))
             } else {
@@ -32,12 +34,18 @@ mod tests {
         }
     }
 
-    #[test]
-    fn execute_test() {
+    #[tokio::test]
+    async fn execute_returns_item_when_present() {
         let port = MockItemQuery;
         assert_eq!(
-            execute(&port, EntityId::from(1)),
+            execute(&port, EntityId::from(1)).await,
             Some(stub_item(EntityId::from(1)))
         );
+    }
+
+    #[tokio::test]
+    async fn execute_returns_none_when_missing() {
+        let port = MockItemQuery;
+        assert_eq!(execute(&port, EntityId::from(999)).await, None);
     }
 }

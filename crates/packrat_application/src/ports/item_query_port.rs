@@ -1,5 +1,7 @@
+use async_trait::async_trait;
 use packrat_domain::item::{Entity, EntityId};
 
+#[async_trait]
 pub trait ItemQueryPort: Send + Sync {
-    fn get_item_by_id(&self, id: EntityId) -> Option<Entity>;
+    async fn get_item_by_id(&self, id: EntityId) -> Option<Entity>;
 }

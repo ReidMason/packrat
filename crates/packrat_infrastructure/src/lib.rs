@@ -5,7 +5,7 @@ mod postgres;
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-pub use postgres::{PostgresItemCommand, connect_pool, run_migrations};
+pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations};
 
 use packrat_application::{ItemCommandPort, ItemQueryPort};
 use packrat_domain::item::{Entity, EntityId, EntityName};
@@ -21,8 +21,9 @@ fn stub_item(id: EntityId) -> Entity {
 /// Placeholder “database” for wiring demos and tests.
 pub struct StubItemQuery;
 
+#[async_trait]
 impl ItemQueryPort for StubItemQuery {
-    fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
+    async fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
         if id == EntityId::from(1) {
             Some(stub_item(id))
         } else {
