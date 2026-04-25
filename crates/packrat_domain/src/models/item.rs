@@ -42,11 +42,12 @@ impl std::ops::DerefMut for ItemName {
 pub struct Item {
     pub id: ItemId,
     pub name: ItemName,
+    pub parent: Option<StockId>,
 }
 
 impl Item {
-    pub fn new(id: ItemId, name: ItemName) -> Self {
-        Self { id, name }
+    pub fn new(id: ItemId, name: ItemName, parent: Option<StockId>) -> Self {
+        Self { id, name, parent }
     }
 }
 
@@ -62,7 +63,7 @@ mod item_tests {
 
     #[test]
     fn change_name() {
-        let mut item = Item::new(ItemId::new(1), ItemName::from("Fork"));
+        let mut item = Item::new(ItemId::new(1), ItemName::from("Fork"), None);
         item.name = ItemName::from("Spoon");
         assert_eq!(item.name, ItemName::from("Spoon"))
     }
