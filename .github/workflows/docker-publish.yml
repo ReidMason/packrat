@@ -18,8 +18,11 @@ jobs:
   coverage:
     uses: ./.github/workflows/coverage.yml
 
+  sqlx:
+    uses: ./.github/workflows/sqlx.yml
+
   publish:
-    needs: coverage
+    needs: [coverage, sqlx]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

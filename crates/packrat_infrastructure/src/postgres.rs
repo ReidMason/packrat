@@ -17,11 +17,13 @@ impl PostgresItemCommand {
 #[async_trait]
 impl ItemCommandPort for PostgresItemCommand {
     async fn create_item(&self, name: ItemName) -> Item {
-        let id: i64 = sqlx::query_scalar("INSERT INTO items (name) VALUES ($1) RETURNING id")
-            .bind(name.as_str())
-            .fetch_one(&self.pool)
-            .await
-            .expect("insert item");
+        let id = sqlx::query_scalar!(
+            "INSERT INTO items (name) VALUES ($1) RETURNING id",
+            name.as_str()
+        )
+        .fetch_one(&self.pool)
+        .await
+        .expect("insert item");
         Item::new(ItemId::new(id as u64), name)
     }
 }
