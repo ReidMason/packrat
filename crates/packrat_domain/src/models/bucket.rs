@@ -67,28 +67,3 @@ impl Inventory for Bucket {
         todo!()
     }
 }
-
-#[cfg(test)]
-mod bucket_tests {
-    use super::*;
-    use crate::item::{Item, ItemId, ItemName};
-
-    fn setup_test_buckets() -> Bucket {
-        let item = Item::new(ItemId::new(100), ItemName::from("Spoon"), None);
-        let root_bucket_id = BucketId::new(1);
-
-        let sub_bucket = Bucket {
-            id: BucketId::new(2),
-            name: BucketName::from("Little Box"),
-            parent_id: Some(InventoryId::Bucket(root_bucket_id)),
-            stock: vec![Box::new(item)],
-        };
-
-        Bucket {
-            id: root_bucket_id,
-            name: BucketName::from("Big Box"),
-            parent_id: None,
-            stock: vec![Box::new(sub_bucket)],
-        }
-    }
-}

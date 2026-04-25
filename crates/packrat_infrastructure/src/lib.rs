@@ -8,10 +8,16 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub use postgres::{connect_pool, run_migrations, PostgresItemCommand};
 
 use packrat_application::{ItemCommandPort, ItemPlacement, ItemQueryPort};
+use packrat_domain::inventory::InventoryId;
 use packrat_domain::item::{Item, ItemId, ItemName};
+use packrat_domain::location::LocationId;
 
 fn stub_item(id: ItemId) -> Item {
-    Item::new(id, ItemName::from("from infrastructure stub"), None)
+    Item::new(
+        id,
+        ItemName::from("from infrastructure stub"),
+        InventoryId::Location(LocationId::new(1)),
+    )
 }
 
 /// Placeholder “database” for wiring demos and tests.
@@ -41,8 +47,12 @@ impl Default for StubItemCommand {
 
 #[async_trait]
 impl ItemCommandPort for StubItemCommand {
-    async fn create_item(&self, name: ItemName, _placement: ItemPlacement) -> Item {
+    async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
         let id = ItemId::new(self.next_id.fetch_add(1, Ordering::Relaxed));
-        Item::new(id, name, None)
+        let parent = match placement {
+            ItemPlacement::InLocation(loc) => InventoryId::Location(loc),
+            ItemPlacement::InBucket(bid) => InventoryId::Bucket(bid),
+        };
+        Item::new(id, name, parent)
     }
 }

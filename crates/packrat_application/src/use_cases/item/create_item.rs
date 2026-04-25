@@ -14,6 +14,7 @@ pub async fn execute(
 mod tests {
     use super::*;
     use async_trait::async_trait;
+    use packrat_domain::inventory::InventoryId;
     use packrat_domain::item::ItemId;
     use packrat_domain::location::LocationId;
 
@@ -21,8 +22,12 @@ mod tests {
 
     #[async_trait]
     impl ItemCommandPort for MockItemCommand {
-        async fn create_item(&self, name: ItemName, _placement: ItemPlacement) -> Item {
-            Item::new(ItemId::new(99), name, None)
+        async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
+            let parent = match placement {
+                ItemPlacement::InLocation(id) => InventoryId::Location(id),
+                ItemPlacement::InBucket(id) => InventoryId::Bucket(id),
+            };
+            Item::new(ItemId::new(99), name, parent)
         }
     }
 

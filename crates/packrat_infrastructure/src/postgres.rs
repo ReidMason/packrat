@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use packrat_application::{ItemCommandPort, ItemPlacement};
+use packrat_domain::inventory::InventoryId;
 use packrat_domain::item::{Item, ItemId, ItemName};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -17,25 +18,31 @@ impl PostgresItemCommand {
 #[async_trait]
 impl ItemCommandPort for PostgresItemCommand {
     async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
-        let id: i64 = match placement {
-            ItemPlacement::InLocation(location_id) => sqlx::query_scalar!(
-                "INSERT INTO items (name, location_id) VALUES ($1, $2) RETURNING id",
-                name.as_str(),
-                location_id.raw() as i64
-            )
-            .fetch_one(&self.pool)
-            .await
-            .expect("insert item"),
-            ItemPlacement::InBucket(bucket_id) => sqlx::query_scalar!(
-                "INSERT INTO items (name, bucket_id) VALUES ($1, $2) RETURNING id",
-                name.as_str(),
-                bucket_id.raw() as i64
-            )
-            .fetch_one(&self.pool)
-            .await
-            .expect("insert item"),
+        let (id, parent) = match placement {
+            ItemPlacement::InLocation(location_id) => {
+                let id = sqlx::query_scalar!(
+                    "INSERT INTO items (name, location_id) VALUES ($1, $2) RETURNING id",
+                    name.as_str(),
+                    location_id.raw() as i64
+                )
+                .fetch_one(&self.pool)
+                .await
+                .expect("insert item");
+                (id, InventoryId::Location(location_id))
+            }
+            ItemPlacement::InBucket(bucket_id) => {
+                let id = sqlx::query_scalar!(
+                    "INSERT INTO items (name, bucket_id) VALUES ($1, $2) RETURNING id",
+                    name.as_str(),
+                    bucket_id.raw() as i64
+                )
+                .fetch_one(&self.pool)
+                .await
+                .expect("insert item");
+                (id, InventoryId::Bucket(bucket_id))
+            }
         };
-        Item::new(ItemId::new(id as u64), name, None)
+        Item::new(ItemId::new(id as u64), name, parent)
     }
 }
 
