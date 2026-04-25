@@ -5,6 +5,13 @@ edition = "2024"
 description = "Adapters: DB, HTTP, external services. Depends on domain, never the reverse."
 
 [dependencies]
+async-trait = "0.1"
 packrat_domain = { path = "../packrat_domain" }
 packrat_application = { path = "../packrat_application" }
-# sqlx, tokio, etc. will live here later—not in `packrat_domain`.
+sqlx = { version = "0.8", default-features = false, features = [
+    "macros",
+    "migrate",
+    "postgres",
+    "runtime-tokio",
+] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -4,8 +4,10 @@ WORKDIR /app
 RUN apk add --no-cache musl-dev
 
 COPY Cargo.toml Cargo.lock ./
+COPY .sqlx ./.sqlx
 COPY crates ./crates
 
+ENV SQLX_OFFLINE=true
 RUN cargo build --release -p packrat
 
 FROM scratch AS runtime

@@ -1,6 +1,27 @@
 services:
+  postgres:
+    image: postgres:14.22
+    environment:
+      POSTGRES_USER: packrat
+      POSTGRES_PASSWORD: packrat
+      POSTGRES_DB: packrat
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U packrat -d packrat"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
   packrat:
     build:
       context: .
       dockerfile: Dockerfile
     image: packrat:local
+    environment:
+      DATABASE_URL: postgres://packrat:packrat@postgres:5432/packrat?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
