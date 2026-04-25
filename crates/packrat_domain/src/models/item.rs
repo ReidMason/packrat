@@ -3,8 +3,8 @@ use crate::{inventory::InventoryId, stock::{Stock, StockId}};
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct ItemId(i64);
 
-impl ItemId {
-    pub fn new(id: i64) -> Self {
+impl From<i64> for ItemId {
+    fn from(id: i64) -> Self {
         Self(id)
     }
 }
@@ -72,7 +72,7 @@ mod item_tests {
     #[test]
     fn change_name() {
         let mut item = Item::new(
-            ItemId::new(1),
+            ItemId::from(1),
             ItemName::from("Fork"),
             InventoryId::Location(LocationId::new(1)),
         );

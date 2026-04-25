@@ -25,7 +25,7 @@ pub struct StubItemQuery;
 
 impl ItemQueryPort for StubItemQuery {
     fn get_item_by_id(&self, id: ItemId) -> Option<Item> {
-        if id == ItemId::new(1) {
+        if id == ItemId::from(1) {
             Some(stub_item(id))
         } else {
             None
@@ -48,7 +48,7 @@ impl Default for StubItemCommand {
 #[async_trait]
 impl ItemCommandPort for StubItemCommand {
     async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
-        let id = ItemId::new(self.next_id.fetch_add(1, Ordering::Relaxed));
+        let id = ItemId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
         let parent = match placement {
             ItemPlacement::InLocation(loc) => InventoryId::Location(loc),
             ItemPlacement::InBucket(bid) => InventoryId::Bucket(bid),

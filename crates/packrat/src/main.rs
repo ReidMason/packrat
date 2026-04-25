@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!("#{:?}: {:?}", created.id, created.name);
 
     let item_query = StubItemQuery;
-    if let Some(item) = get_item(&item_query, ItemId::new(1)) {
+    if let Some(item) = get_item(&item_query, ItemId::from(1)) {
         println!("#{:?}: {:?}", item.id, item.name)
     }
 

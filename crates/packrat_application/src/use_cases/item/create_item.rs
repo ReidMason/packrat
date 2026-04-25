@@ -27,7 +27,7 @@ mod tests {
                 ItemPlacement::InLocation(id) => InventoryId::Location(id),
                 ItemPlacement::InBucket(id) => InventoryId::Bucket(id),
             };
-            Item::new(ItemId::new(99), name, parent)
+            Item::new(ItemId::from(99), name, parent)
         }
     }
 
@@ -40,7 +40,7 @@ mod tests {
             ItemPlacement::InLocation(LocationId::new(1)),
         )
         .await;
-        assert_eq!(item.id, ItemId::new(99));
+        assert_eq!(item.id, ItemId::from(99));
         assert_eq!(item.name, ItemName::from("alpha"));
     }
 }

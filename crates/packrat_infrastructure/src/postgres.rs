@@ -42,7 +42,7 @@ impl ItemCommandPort for PostgresItemCommand {
                 (id, InventoryId::Bucket(bucket_id))
             }
         };
-        Item::new(ItemId::new(id), name, parent)
+        Item::new(ItemId::from(id), name, parent)
     }
 }
 
