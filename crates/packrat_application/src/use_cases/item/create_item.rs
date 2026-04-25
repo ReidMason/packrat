@@ -17,8 +17,6 @@ mod tests {
     use packrat_domain::item::ItemId;
     use packrat_domain::location::LocationId;
 
-    use super::*;
-
     struct MockItemCommand;
 
     #[async_trait]

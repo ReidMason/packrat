@@ -63,7 +63,7 @@ impl Stock for Bucket {
 }
 
 impl Inventory for Bucket {
-    fn find_item(&self, id: StockId) -> Option<&dyn Stock> {
+    fn find_item(&self, _id: StockId) -> Option<&dyn Stock> {
         todo!()
     }
 }
