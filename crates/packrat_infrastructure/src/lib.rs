@@ -5,18 +5,16 @@ mod postgres;
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-pub use postgres::{connect_pool, run_migrations, PostgresItemCommand};
+pub use postgres::{PostgresItemCommand, connect_pool, run_migrations};
 
-use packrat_application::{ItemCommandPort, ItemPlacement, ItemQueryPort};
-use packrat_domain::inventory::InventoryId;
-use packrat_domain::item::{Item, ItemId, ItemName};
-use packrat_domain::location::LocationId;
+use packrat_application::{ItemCommandPort, ItemQueryPort};
+use packrat_domain::item::{Entity, EntityId, EntityName};
 
-fn stub_item(id: ItemId) -> Item {
-    Item::new(
+fn stub_item(id: EntityId) -> Entity {
+    Entity::new(
         id,
-        ItemName::from("from infrastructure stub"),
-        InventoryId::Location(LocationId::from(1)),
+        EntityName::from("from infrastructure stub"),
+        Some(EntityId::from(1)),
     )
 }
 
@@ -24,8 +22,8 @@ fn stub_item(id: ItemId) -> Item {
 pub struct StubItemQuery;
 
 impl ItemQueryPort for StubItemQuery {
-    fn get_item_by_id(&self, id: ItemId) -> Option<Item> {
-        if id == ItemId::from(1) {
+    fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
+        if id == EntityId::from(1) {
             Some(stub_item(id))
         } else {
             None
@@ -47,12 +45,8 @@ impl Default for StubItemCommand {
 
 #[async_trait]
 impl ItemCommandPort for StubItemCommand {
-    async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
-        let id = ItemId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
-        let parent = match placement {
-            ItemPlacement::InLocation(loc) => InventoryId::Location(loc),
-            ItemPlacement::InBucket(bid) => InventoryId::Bucket(bid),
-        };
-        Item::new(id, name, parent)
+    async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
+        let id = EntityId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
+        Entity::new(id, name, parent)
     }
 }

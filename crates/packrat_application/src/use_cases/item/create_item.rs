@@ -1,46 +1,31 @@
-use packrat_domain::item::{Item, ItemName};
+use packrat_domain::item::{Entity, EntityId, EntityName};
 
-use crate::ports::{ItemCommandPort, ItemPlacement};
+use crate::ports::ItemCommandPort;
 
-pub async fn execute(
-    port: &impl ItemCommandPort,
-    name: ItemName,
-    placement: ItemPlacement,
-) -> Item {
-    port.create_item(name, placement).await
+pub async fn execute(port: &impl ItemCommandPort, name: EntityName, parent: Option<EntityId>) -> Entity {
+    port.create_item(name, parent).await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use packrat_domain::inventory::InventoryId;
-    use packrat_domain::item::ItemId;
-    use packrat_domain::location::LocationId;
+    use packrat_domain::item::EntityId;
 
     struct MockItemCommand;
 
     #[async_trait]
     impl ItemCommandPort for MockItemCommand {
-        async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
-            let parent = match placement {
-                ItemPlacement::InLocation(id) => InventoryId::Location(id),
-                ItemPlacement::InBucket(id) => InventoryId::Bucket(id),
-            };
-            Item::new(ItemId::from(99), name, parent)
+        async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
+            Entity::new(EntityId::from(99), name, parent)
         }
     }
 
     #[tokio::test]
     async fn execute_creates_item_via_port() {
         let port = MockItemCommand;
-        let item = execute(
-            &port,
-            ItemName::from("alpha"),
-            ItemPlacement::InLocation(LocationId::from(1)),
-        )
-        .await;
-        assert_eq!(item.id, ItemId::from(99));
-        assert_eq!(item.name, ItemName::from("alpha"));
+        let item = execute(&port, EntityName::from("alpha"), Some(EntityId::from(1))).await;
+        assert_eq!(item.id, EntityId::from(99));
+        assert_eq!(item.name, EntityName::from("alpha"));
     }
 }

@@ -1,32 +1,30 @@
-use packrat_domain::item::{Item, ItemId};
+use packrat_domain::item::{Entity, EntityId};
 
 use crate::ports::ItemQueryPort;
 
-pub fn execute(port: &impl ItemQueryPort, id: ItemId) -> Option<Item> {
+pub fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> {
     port.get_item_by_id(id)
 }
 
 #[cfg(test)]
 mod tests {
-    use packrat_domain::inventory::InventoryId;
-    use packrat_domain::item::ItemName;
-    use packrat_domain::location::LocationId;
+    use packrat_domain::item::EntityName;
 
     use super::*;
 
     struct MockItemQuery;
 
-    fn stub_item(id: ItemId) -> Item {
-        Item::new(
+    fn stub_item(id: EntityId) -> Entity {
+        Entity::new(
             id,
-            ItemName::from("from infrastructure stub"),
-            InventoryId::Location(LocationId::from(1)),
+            EntityName::from("from infrastructure stub"),
+            Some(EntityId::from(1)),
         )
     }
 
     impl ItemQueryPort for MockItemQuery {
-        fn get_item_by_id(&self, id: ItemId) -> Option<Item> {
-            if id == ItemId::from(1) {
+        fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
+            if id == EntityId::from(1) {
                 Some(stub_item(id))
             } else {
                 None
@@ -38,8 +36,8 @@ mod tests {
     fn execute_test() {
         let port = MockItemQuery;
         assert_eq!(
-            execute(&port, ItemId::from(1)),
-            Some(stub_item(ItemId::from(1)))
+            execute(&port, EntityId::from(1)),
+            Some(stub_item(EntityId::from(1)))
         );
     }
 }

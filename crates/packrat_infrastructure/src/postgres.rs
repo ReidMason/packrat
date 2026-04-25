@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use packrat_application::{ItemCommandPort, ItemPlacement};
-use packrat_domain::inventory::InventoryId;
-use packrat_domain::item::{Item, ItemId, ItemName};
+use packrat_application::ItemCommandPort;
+use packrat_domain::item::{Entity, EntityId, EntityName};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
@@ -17,32 +16,24 @@ impl PostgresItemCommand {
 
 #[async_trait]
 impl ItemCommandPort for PostgresItemCommand {
-    async fn create_item(&self, name: ItemName, placement: ItemPlacement) -> Item {
-        let (id, parent) = match placement {
-            ItemPlacement::InLocation(location_id) => {
+    async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
+        let (id, _) = match parent {
+            Some(parent) => {
                 let id = sqlx::query_scalar!(
-                    "INSERT INTO items (name, location_id) VALUES ($1, $2) RETURNING id",
+                    "INSERT INTO items (name, parent_id) VALUES ($1, $2) RETURNING id",
                     name.as_str(),
-                    i64::from(location_id)
+                    i64::from(parent)
                 )
                 .fetch_one(&self.pool)
                 .await
                 .expect("insert item");
-                (id, InventoryId::Location(location_id))
+                (id, parent)
             }
-            ItemPlacement::InBucket(bucket_id) => {
-                let id = sqlx::query_scalar!(
-                    "INSERT INTO items (name, bucket_id) VALUES ($1, $2) RETURNING id",
-                    name.as_str(),
-                    i64::from(bucket_id)
-                )
-                .fetch_one(&self.pool)
-                .await
-                .expect("insert item");
-                (id, InventoryId::Bucket(bucket_id))
+            None => {
+                todo!()
             }
         };
-        Item::new(ItemId::from(id), name, parent)
+        Entity::new(EntityId::from(id), name, parent)
     }
 }
 
