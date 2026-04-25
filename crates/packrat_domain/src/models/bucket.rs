@@ -45,7 +45,6 @@ pub struct Bucket {
     pub id: BucketId,
     pub name: BucketName,
     pub parent_id: Option<InventoryId>,
-    pub stock: Vec<Box<dyn Stock>>,
 }
 
 impl Stock for Bucket {
@@ -70,21 +69,27 @@ mod bucket_tests {
     use crate::item::{Item, ItemId, ItemName};
 
     fn setup_test_buckets() -> Bucket {
-        let item = Item::new(ItemId::new(100), ItemName::from("Spoon"), None);
+        let sub_bucket_id = BucketId::new(2);
         let root_bucket_id = BucketId::new(1);
+
+        let item = Item::new(
+            ItemId::new(100),
+            ItemName::from("Spoon"),
+            Some(InventoryId::Bucket(sub_bucket_id)),
+        );
 
         let sub_bucket = Bucket {
             id: BucketId::new(2),
             name: BucketName::from("Little Box"),
             parent_id: Some(InventoryId::Bucket(root_bucket_id)),
-            stock: vec![Box::new(item)],
         };
 
-        Bucket {
+        let root_bucket = Bucket {
             id: root_bucket_id,
             name: BucketName::from("Big Box"),
             parent_id: None,
-            stock: vec![Box::new(sub_bucket)],
-        }
+        };
+
+        root_bucket
     }
 }
