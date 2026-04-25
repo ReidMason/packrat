@@ -8,13 +8,14 @@ pub fn execute(port: &impl ItemQueryPort, id: ItemId) -> Option<Item> {
 
 #[cfg(test)]
 mod tests {
+    use packrat_domain::item::ItemName;
+
     use super::*;
-    use packrat_domain::item::{ItemId, ItemName};
 
     struct MockItemQuery;
 
     fn stub_item(id: ItemId) -> Item {
-        Item::new(id, ItemName::from("from infrastructure stub"))
+        Item::new(id, ItemName::from("from infrastructure stub"), None)
     }
 
     impl ItemQueryPort for MockItemQuery {

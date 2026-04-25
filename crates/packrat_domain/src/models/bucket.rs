@@ -1,6 +1,9 @@
-use crate::location::LocationId;
+use crate::{
+    inventory::{Inventory, InventoryId},
+    stock::{Stock, StockId},
+};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct BucketId(u64);
 
 impl BucketId {
@@ -41,5 +44,47 @@ impl std::ops::DerefMut for BucketName {
 pub struct Bucket {
     pub id: BucketId,
     pub name: BucketName,
-    pub location_id: LocationId,
+    pub parent_id: Option<InventoryId>,
+    pub stock: Vec<Box<dyn Stock>>,
+}
+
+impl Stock for Bucket {
+    fn id(&self) -> StockId {
+        StockId::Bucket(self.id)
+    }
+
+    fn as_inventory(&self) -> Option<&dyn Inventory> {
+        Some(self)
+    }
+}
+
+impl Inventory for Bucket {
+    fn find_item(&self, id: StockId) -> Option<&dyn Stock> {
+        todo!()
+    }
+}
+
+#[cfg(test)]
+mod bucket_tests {
+    use super::*;
+    use crate::item::{Item, ItemId, ItemName};
+
+    fn setup_test_buckets() -> Bucket {
+        let item = Item::new(ItemId::new(100), ItemName::from("Spoon"), None);
+        let root_bucket_id = BucketId::new(1);
+
+        let sub_bucket = Bucket {
+            id: BucketId::new(2),
+            name: BucketName::from("Little Box"),
+            parent_id: Some(InventoryId::Bucket(root_bucket_id)),
+            stock: vec![Box::new(item)],
+        };
+
+        Bucket {
+            id: root_bucket_id,
+            name: BucketName::from("Big Box"),
+            parent_id: None,
+            stock: vec![Box::new(sub_bucket)],
+        }
+    }
 }

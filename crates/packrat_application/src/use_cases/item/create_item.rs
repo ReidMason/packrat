@@ -12,12 +12,14 @@ mod tests {
     use async_trait::async_trait;
     use packrat_domain::item::ItemId;
 
+    use super::*;
+
     struct MockItemCommand;
 
     #[async_trait]
     impl ItemCommandPort for MockItemCommand {
         async fn create_item(&self, name: ItemName) -> Item {
-            Item::new(ItemId::new(99), name)
+            Item::new(ItemId::new(99), name, None)
         }
     }
 
