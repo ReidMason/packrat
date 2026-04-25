@@ -35,7 +35,7 @@ impl ItemCommandPort for PostgresItemCommand {
             .await
             .expect("insert item"),
         };
-        Item::new(ItemId::new(id as u64), name)
+        Item::new(ItemId::new(id as u64), name, None)
     }
 }
 

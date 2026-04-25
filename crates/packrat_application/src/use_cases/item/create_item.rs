@@ -22,7 +22,7 @@ mod tests {
     #[async_trait]
     impl ItemCommandPort for MockItemCommand {
         async fn create_item(&self, name: ItemName, _placement: ItemPlacement) -> Item {
-            Item::new(ItemId::new(99), name)
+            Item::new(ItemId::new(99), name, None)
         }
     }
 
