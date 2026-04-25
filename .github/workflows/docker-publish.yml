@@ -15,7 +15,18 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Run tests
+        run: cargo test --workspace
+
   publish:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
