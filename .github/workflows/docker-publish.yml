@@ -15,11 +15,11 @@ permissions:
   packages: write
 
 jobs:
-  test:
-    uses: ./.github/workflows/tests.yml
+  coverage:
+    uses: ./.github/workflows/coverage.yml
 
   publish:
-    needs: test
+    needs: coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
