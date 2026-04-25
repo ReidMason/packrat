@@ -1,4 +1,4 @@
-use crate::stock::{Stock, StockId};
+use crate::{inventory::InventoryId, stock::{Stock, StockId}};
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct ItemId(u64);
@@ -42,17 +42,17 @@ impl std::ops::DerefMut for ItemName {
 pub struct Item {
     pub id: ItemId,
     pub name: ItemName,
-    pub parent: Option<StockId>,
+    pub parent: Option<InventoryId>,
 }
 
 impl Item {
-    pub fn new(id: ItemId, name: ItemName, parent: Option<StockId>) -> Self {
+    pub fn new(id: ItemId, name: ItemName, parent: Option<InventoryId>) -> Self {
         Self { id, name, parent }
     }
 }
 
 impl Stock for Item {
-    fn id(&self) -> crate::stock::StockId {
+    fn id(&self) -> StockId {
         StockId::Item(self.id)
     }
 }

@@ -12,8 +12,6 @@ mod tests {
     use async_trait::async_trait;
     use packrat_domain::item::ItemId;
 
-    use super::*;
-
     struct MockItemCommand;
 
     #[async_trait]
