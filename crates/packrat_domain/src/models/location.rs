@@ -1,12 +1,12 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocationId(u64);
+pub struct LocationId(i64);
 
 impl LocationId {
-    pub const fn new(id: u64) -> Self {
+    pub const fn new(id: i64) -> Self {
         Self(id)
     }
 
-    pub const fn raw(self) -> u64 {
+    pub const fn raw(self) -> i64 {
         self.0
     }
 }

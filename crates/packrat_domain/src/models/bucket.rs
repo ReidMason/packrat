@@ -4,14 +4,14 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BucketId(u64);
+pub struct BucketId(i64);
 
 impl BucketId {
-    pub const fn new(id: u64) -> Self {
+    pub const fn new(id: i64) -> Self {
         Self(id)
     }
 
-    pub const fn raw(self) -> u64 {
+    pub const fn raw(self) -> i64 {
         self.0
     }
 }

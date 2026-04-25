@@ -3,7 +3,7 @@
 mod postgres;
 
 use async_trait::async_trait;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, Ordering};
 
 pub use postgres::{connect_pool, run_migrations, PostgresItemCommand};
 
@@ -34,13 +34,13 @@ impl ItemQueryPort for StubItemQuery {
 }
 
 pub struct StubItemCommand {
-    next_id: AtomicU64,
+    next_id: AtomicI64,
 }
 
 impl Default for StubItemCommand {
     fn default() -> Self {
         Self {
-            next_id: AtomicU64::new(1),
+            next_id: AtomicI64::new(1),
         }
     }
 }

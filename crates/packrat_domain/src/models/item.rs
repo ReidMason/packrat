@@ -1,11 +1,15 @@
 use crate::{inventory::InventoryId, stock::{Stock, StockId}};
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub struct ItemId(u64);
+pub struct ItemId(i64);
 
 impl ItemId {
-    pub fn new(id: u64) -> Self {
+    pub fn new(id: i64) -> Self {
         Self(id)
+    }
+
+    pub const fn raw(self) -> i64 {
+        self.0
     }
 }
 
