@@ -19,3 +19,9 @@ sqlx-prepare:
     export DATABASE_URL="${DATABASE_URL:-postgres://packrat:packrat@localhost:5432/packrat?sslmode=disable}"
     cargo sqlx migrate run --source crates/packrat_infrastructure/migrations
     cargo sqlx prepare --workspace --database-url "$DATABASE_URL" -- --all-targets
+
+emulator-create:
+    avdmanager create avd --name phone --package 'system-images;android-34;google_apis;x86_64'
+
+emulator-run:
+    emulator -avd phone -skin 720x1280 -noaudio -no-snapshot-load -no-snapshot

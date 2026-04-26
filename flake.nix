@@ -24,15 +24,38 @@
         };
       };
 
+      androidBuildToolsVersion = "34.0.0";
+      androidEnv = pkgs.androidenv.override {licenseAccepted = true;};
       # NOTE: Requires programs.nix-ld.enable = true;
-      androidComposition = pkgs.androidenv.composeAndroidPackages {
+      androidComposition = androidEnv.composeAndroidPackages {
         includeNDK = true;
         ndkVersion = "26.1.10909125";
+
+        cmdLineToolsVersion = "8.0";
         platformVersions = ["34"];
-        buildToolsVersions = ["34.0.0"];
+        platformToolsVersion = "37.0.0";
+        buildToolsVersions = [androidBuildToolsVersion];
         abiVersions = ["x86_64" "arm64-v8a"];
         includeExtras = ["extras;google;m2repository"];
+        useGoogleAPIs = true;
+        extraLicenses = [
+          "android-googletv-license"
+          "android-sdk-arm-dbt-license"
+          "android-sdk-license"
+          "android-sdk-preview-license"
+          "google-gdk-license"
+          "intel-android-extra-license"
+          "intel-android-sysimage-license"
+          "mips-android-sysimage-license"
+        ];
+
+        includeEmulator = true;
+        emulatorVersion = "36.6.3";
+
+        includeSystemImages = true;
+        systemImageTypes = ["google_apis" "google_apis_playstore"];
       };
+      androidSdk = androidComposition.androidsdk;
 
       runtimeDeps = with pkgs; [
         webkitgtk_4_1
@@ -78,20 +101,15 @@
       devShells.default = pkgs.mkShell {
         inherit buildInputs;
 
-        # Ensures Cargo can find libraries for Desktop compilation
+        RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+        ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
+        ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
+        JAVA_HOME = pkgs.jdk21.home;
+        GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidSdk}/libexec/android-sdk/build-tools/${androidBuildToolsVersion}/aapt2";
+        QT_QPA_PLATFORM = "wayland;xcb";
+        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [pkgs.vulkan-loader pkgs.libGL]}";
+
         shellHook = ''
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.lib.makeLibraryPath runtimeDeps}"
-          export GST_PLUGIN_SYSTEM_PATH_1_0="${pkgs.gst_all_1.gst-plugins-base}/lib/gstreamer-1.0:${pkgs.gst_all_1.gst-plugins-good}/lib/gstreamer-1.0"
-
-          export ANDROID_HOME="${androidComposition.androidsdk}/libexec/android-sdk"
-          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk-bundle"
-          export JAVA_HOME="${pkgs.jdk17.home}"
-          export GRADLE_USER_HOME="$PWD/.gradle"
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          export GRADLE_OPTS="-Dandroid.aapt2FromMaven=false"
-          export NIX_LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath buildInputs}"
-          export NIX_LD="$(cat ${pkgs.stdenv.cc}/nix-support/dynamic-linker)"
-
           dx --version
         '';
       };
