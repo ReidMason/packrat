@@ -24,6 +24,7 @@
         };
       };
 
+      # NOTE: Requires programs.nix-ld.enable = true;
       androidComposition = pkgs.androidenv.composeAndroidPackages {
         includeNDK = true;
         ndkVersion = "26.1.10909125";
@@ -69,7 +70,7 @@
           sqlx-cli
 
           # Android
-          android-tools
+          nix-ld
           androidComposition.androidsdk
         ]
         ++ runtimeDeps;
@@ -88,6 +89,8 @@
           export GRADLE_USER_HOME="$PWD/.gradle"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
           export GRADLE_OPTS="-Dandroid.aapt2FromMaven=false"
+          export NIX_LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath buildInputs}"
+          export NIX_LD="$(cat ${pkgs.stdenv.cc}/nix-support/dynamic-linker)"
 
           dx --version
         '';
