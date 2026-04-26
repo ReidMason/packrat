@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+mod tailwind;
+use tailwind;
 
 use ui::Navbar;
 use views::{Blog, Home};
