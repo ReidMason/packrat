@@ -8,6 +8,7 @@ ui/
 │  ├─ lib.rs # The entrypoint for the ui crate
 │  ├─ hero.rs # The Hero component that will be used in every platform
 │  ├─ echo.rs # The shared echo component that communicates with the server
+│  ├─ navbar.rs # The Navbar component that will be used in the layout of every platform's router
 ```
 
 ## Dependencies
