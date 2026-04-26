@@ -85,8 +85,8 @@
             ];
           })
 
-          # Dioxus CLI and tools
           dioxus-cli
+          tailwindcss
           pkg-config
           trunk
           cargo-tarpaulin
