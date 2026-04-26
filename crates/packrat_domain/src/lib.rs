@@ -1,3 +1,3 @@
 pub mod models;
 
-pub use models::item;
+pub use models::entity;

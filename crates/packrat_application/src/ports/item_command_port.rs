@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use packrat_domain::item::{Entity, EntityId, EntityName};
+use packrat_domain::entity::{Entity, EntityId, EntityName};
 
 #[async_trait]
 pub trait ItemCommandPort: Send + Sync {

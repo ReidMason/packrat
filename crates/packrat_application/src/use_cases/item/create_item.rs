@@ -1,4 +1,4 @@
-use packrat_domain::item::{Entity, EntityId, EntityName};
+use packrat_domain::entity::{Entity, EntityId, EntityName};
 
 use crate::ports::ItemCommandPort;
 
@@ -10,7 +10,7 @@ pub async fn execute(port: &impl ItemCommandPort, name: EntityName, parent: Opti
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use packrat_domain::item::EntityId;
+    use packrat_domain::entity::EntityId;
 
     struct MockItemCommand;
 

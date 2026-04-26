@@ -1,5 +1,5 @@
 use packrat_application::{create_item, get_item};
-use packrat_domain::item::EntityName;
+use packrat_domain::entity::EntityName;
 use packrat_infrastructure::{
     PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations,
 };

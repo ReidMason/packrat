@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations};
 
 use packrat_application::{ItemCommandPort, ItemQueryPort};
-use packrat_domain::item::{Entity, EntityId, EntityName};
+use packrat_domain::entity::{Entity, EntityId, EntityName};
 
 fn stub_item(id: EntityId) -> Entity {
     Entity::new(

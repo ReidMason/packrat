@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use packrat_domain::item::{Entity, EntityId};
+use packrat_domain::entity::{Entity, EntityId};
 
 #[async_trait]
 pub trait ItemQueryPort: Send + Sync {

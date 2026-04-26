@@ -1,0 +1,62 @@
+{
+  description = "An inventory manager";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+  };
+
+  outputs = {
+    self,
+    nixpkgs,
+  }: let
+    systems = ["x86_64-linux" "aarch64-linux"];
+
+    eachSystem = f:
+      nixpkgs.lib.genAttrs systems (system:
+        f system nixpkgs.legacyPackages.${system});
+  in {
+    packages = eachSystem (system: pkgs: {
+      default = pkgs.rustPlatform.buildRustPackage {
+        name = "packrat";
+        src = ./.;
+        buildInputs = with pkgs; [
+          glib
+          gtk3
+          webkitgtk_4_1
+          libsoup_3
+          openssl
+          xdotool
+          libiconv
+        ];
+        nativeBuildInputs = [pkgs.pkg-config];
+        cargoLock.lockFile = ./Cargo.lock;
+      };
+    });
+
+    devShells = eachSystem (system: pkgs: {
+      default = pkgs.mkShell {
+        packages = with pkgs; [
+          # Rust
+          cargo
+          rustc
+          rustfmt
+          clippy
+          rust-analyzer
+          cargo-tarpaulin
+
+          # Dioxus
+          dioxus-cli
+
+          # System
+          pkg-config
+          gtk3
+          webkitgtk_4_1
+          libsoup_3
+          openssl
+        ];
+
+        RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+      };
+    });
+  };
+}

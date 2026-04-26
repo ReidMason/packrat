@@ -1,4 +1,4 @@
-use packrat_domain::item::{Entity, EntityId};
+use packrat_domain::entity::{Entity, EntityId};
 
 use crate::ports::ItemQueryPort;
 
@@ -9,7 +9,7 @@ pub async fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> 
 #[cfg(test)]
 mod tests {
     use async_trait::async_trait;
-    use packrat_domain::item::EntityName;
+    use packrat_domain::entity::EntityName;
 
     use super::*;
 

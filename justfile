@@ -1,8 +1,11 @@
 default:
     @just --list
 
-test:
-    cargo test --workspace
+test-core *args:
+    cargo test --workspace --exclude packrat_ui {{args}}
+
+test-ui *args:
+    cargo test --manifest-path crates/packrat_ui/Cargo.toml --workspace {{args}}
 
 coverage:
     cargo tarpaulin --workspace --timeout 300 --out Html --output-dir coverage

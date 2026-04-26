@@ -57,7 +57,7 @@ impl Entity {
 
 #[cfg(test)]
 mod item_tests {
-    use crate::item::{Entity, EntityId, EntityName};
+    use crate::entity::{Entity, EntityId, EntityName};
 
     #[test]
     fn change_name() {

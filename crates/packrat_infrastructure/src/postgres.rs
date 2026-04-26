@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use packrat_application::{ItemCommandPort, ItemQueryPort};
-use packrat_domain::item::{Entity, EntityId, EntityName};
+use packrat_domain::entity::{Entity, EntityId, EntityName};
 use sqlx::PgPool;
-use sqlx::postgres::PgPoolOptions;
 use sqlx::Row;
+use sqlx::postgres::PgPoolOptions;
 
 pub struct PostgresItemCommand {
     pool: PgPool,
@@ -18,6 +18,7 @@ impl PostgresItemCommand {
 #[async_trait]
 impl ItemCommandPort for PostgresItemCommand {
     async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
+        // TODO: This should be updated to entities over items
         let id: i64 = sqlx::query_scalar!(
             "INSERT INTO items (name, parent_id) VALUES ($1, $2) RETURNING id",
             name.as_str(),
