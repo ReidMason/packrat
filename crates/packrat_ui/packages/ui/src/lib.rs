@@ -1,6 +1,6 @@
 //! This crate contains all shared UI for the workspace.
 mod tailwind;
-pub use tailwind::TailwindConfig;
+pub use tailwind::{TailwindConfig, ThemeToggle};
 
 mod hero;
 pub use hero::Hero;

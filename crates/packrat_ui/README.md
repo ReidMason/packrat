@@ -5,7 +5,7 @@ Dev Server
 ```
 dx serve --package [desktop, web, mobile] (if mobile add --platform [android, ios])
 ```
-Tailwind - Go to to the package directory and run
+Tailwind
 ```
 just tailwind
 ```

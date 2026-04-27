@@ -1,4 +1,45 @@
 @import "tailwindcss";
+
+@theme {
+  /* Semantic tokens used in your Rust code */
+  --color-app-base: var(--app-base);
+  --color-app-base-dark: var(--app-mantle);
+  --color-app-base-light: var(--app-surface);
+  --color-app-text: var(--app-text);
+  --color-app-subtext: var(--app-subtext);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-soft: var(--app-accent-soft);
+  --color-app-muted: var(--app-muted);
+  --color-app-red: var(--app-red);
+  --color-app-green: var(--app-green);
+}
+
+:root {
+  --app-base: #1e1e2e;         /* base */
+  --app-base-dark: #181825;       /* mantle */
+  --app-base-light: #313244;      /* surface0 */
+  --app-text: #cdd6f4;         /* text */
+  --app-subtext: #a6adc8;      /* subtext0 */
+  --app-accent: #cba6f7;       /* mauve */
+  --app-accent-soft: #b4befe;  /* lavender */
+  --app-muted: #6c7086;        /* overlay0 */
+  --app-red: #f38ba8;          /* red */
+  --app-green: #a6e3a1;        /* green */
+}
+
+.theme-tokyo-night {
+  --app-base: #24283b;         /* bg */
+  --app-base-dark: #1f2335;       /* bg_dark */
+  --app-base-light: #2f3549;      /* bg_highlight */
+  --app-text: #a9b1d6;         /* fg */
+  --app-subtext: #9aa5ce;      /* fg_dark */
+  --app-accent: #7aa2f7;       /* blue */
+  --app-accent-soft: #bb9af7;  /* purple */
+  --app-muted: #565f89;        /* comment */
+  --app-red: #f7768e;          /* red */
+  --app-green: #9ece6a;        /* green */
+}
+
 @source "./src/**/*.{rs,html,css}";
 @source "../desktop/src/**/*.rs";
 @source "../mobile/src/**/*.rs";
