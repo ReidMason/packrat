@@ -1,8 +1,6 @@
 use dioxus::prelude::*;
-mod tailwind;
-use tailwind;
 
-use ui::Navbar;
+use ui::{TailwindConfig, Navbar};
 use views::{Blog, Home};
 
 mod views;
@@ -17,21 +15,16 @@ enum Route {
     Blog { id: i32 },
 }
 
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-
 fn main() {
     dioxus::launch(App);
 }
 
 #[component]
 fn App() -> Element {
-    // Build cool things ✌️
-
     rsx! {
-        // Global app resources
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
-
-        Router::<Route> {}
+        TailwindConfig {}
+        Router::<Route> {
+        }
     }
 }
 
@@ -50,7 +43,7 @@ fn DesktopNavbar() -> Element {
                 "Blog"
             }
         }
-
-        Outlet::<Route> {}
+        Outlet::<Route> {
+        }
     }
 }

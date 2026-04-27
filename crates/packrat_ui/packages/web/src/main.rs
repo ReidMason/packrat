@@ -1,8 +1,5 @@
 use dioxus::prelude::*;
-mod tailwind;
-use tailwind;
-
-use ui::Navbar;
+use ui::{Navbar, TailwindConfig};
 use views::{Blog, Home};
 
 mod views;
@@ -18,7 +15,6 @@ enum Route {
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
-const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
     dioxus::launch(App);
@@ -26,12 +22,9 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    // Build cool things ✌️
-
     rsx! {
-        // Global app resources
         document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
+        TailwindConfig {}
 
         Router::<Route> {}
     }
