@@ -1,4 +1,4 @@
-/*! tailwindcss v4.2.3 | MIT License | https://tailwindcss.com */
+/*! tailwindcss v4.2.4 | MIT License | https://tailwindcss.com */
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
@@ -264,7 +264,7 @@
   --app-red: #f38ba8;
   --app-green: #a6e3a1;
 }
-.theme-tokyo-night {
+[data-theme=".theme-tokyo-night"] {
   --app-base: #24283b;
   --app-base-dark: #1f2335;
   --app-base-light: #2f3549;

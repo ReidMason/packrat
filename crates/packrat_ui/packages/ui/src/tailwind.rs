@@ -10,8 +10,15 @@ pub enum Theme {
 impl Theme {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Self::Catppuccin => "",
-            Self::TokyoNight => "theme-tokyo-night",
+            Self::Catppuccin => "catppuccin",
+            Self::TokyoNight => "tokyo-night",
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        match &self {
+            Theme::Catppuccin => Theme::TokyoNight,
+            Theme::TokyoNight => Theme::Catppuccin,
         }
     }
 }
@@ -24,7 +31,8 @@ pub fn TailwindConfig(children: Element) -> Element {
             href: asset!("/assets/tailwind.css"),
         }
         div {
-            class: "{theme().as_str()} min-h-screen bg-app-base text-app-text transition-colors duration-500 ease-in-out",
+            "data-theme": "{theme().as_str()}",
+            class: "min-h-screen bg-app-base text-app-text transition-colors duration-500 ease-in-out",
             {children}
         }
     }
@@ -33,18 +41,14 @@ pub fn TailwindConfig(children: Element) -> Element {
 #[component]
 pub fn ThemeToggle() -> Element {
     let mut theme = use_context::<Signal<Theme>>();
-    let next = match theme() {
-        Theme::Catppuccin => Theme::TokyoNight,
-        Theme::TokyoNight => Theme::Catppuccin,
-    };
 
     rsx! {
         button {
             class: "px-3 py-1 rounded-full bg-app-surface border border-app-accent text-app-accent hover:bg-app-accent hover:text-app-base transition-all",
             onclick: move |_| {
-                theme.set(next);
+                theme.set(theme().next());
             },
-            "Switch to {next:?}"
+            "Switch to {theme().next():?}"
         }
     }
 }
