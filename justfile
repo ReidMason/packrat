@@ -2,6 +2,8 @@ default:
     @just --list
 
 test-core *args:
+    #!/usr/bin/env bash
+    export DATABASE_URL="${DATABASE_URL:-postgres://packrat:packrat@localhost:5432/packrat?sslmode=disable}"
     cargo test --workspace --exclude packrat_ui {{args}}
 
 test-ui *args:

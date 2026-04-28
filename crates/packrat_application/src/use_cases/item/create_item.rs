@@ -2,7 +2,11 @@ use packrat_domain::entity::{Entity, EntityId, EntityName};
 
 use crate::ports::ItemCommandPort;
 
-pub async fn execute(port: &impl ItemCommandPort, name: EntityName, parent: Option<EntityId>) -> Entity {
+pub async fn execute(
+    port: &impl ItemCommandPort,
+    name: EntityName,
+    parent: Option<EntityId>,
+) -> Entity {
     port.create_item(name, parent).await
 }
 
@@ -18,6 +22,9 @@ mod tests {
     impl ItemCommandPort for MockItemCommand {
         async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
             Entity::new(EntityId::from(99), name, parent)
+        }
+        async fn delete_entity(&self, _id: EntityId) -> Result<(), String> {
+            unimplemented!()
         }
     }
 

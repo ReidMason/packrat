@@ -50,4 +50,14 @@ impl ItemCommandPort for StubItemCommand {
         let id = EntityId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
         Entity::new(id, name, parent)
     }
+    async fn delete_entity(&self, id: EntityId) -> Result<(), String> {
+        let current_max = self.next_id.load(Ordering::Relaxed);
+        let target_id = i64::from(id);
+
+        if target_id > 0 && target_id < current_max {
+            Ok(())
+        } else {
+            Err("Entity not found in stub memory".to_string())
+        }
+    }
 }
