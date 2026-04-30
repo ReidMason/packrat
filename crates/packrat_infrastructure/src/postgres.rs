@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use packrat_application::{ItemCommandPort, ItemQueryPort};
 use packrat_domain::entity::EntityTimestamp;
 use packrat_domain::entity::{Entity, EntityId, EntityName};
+use packrat_domain::models::partial_entity::PartialEntity;
 use sqlx::PgPool;
 use sqlx::Row;
 use sqlx::postgres::PgPoolOptions;
@@ -34,6 +35,43 @@ impl ItemCommandPort for PostgresItemCommand {
         .expect("insert item");
 
         Entity::new(EntityId::from(id), name, parent, created, deleted)
+    }
+
+    async fn update_entity(&self, id: EntityId, changes: PartialEntity) -> Result<(), String> {
+        let current_row = sqlx::query!(
+            "SELECT name, parent_id FROM items WHERE id = $1 AND deleted IS NULL",
+            i64::from(id)
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("Entity {} not found", i64::from(id)))?;
+
+        let name = match changes.name {
+            Some(name) => String::from(name),
+            None => current_row.name,
+        };
+
+        let parent = match changes.parent {
+            Some(new_parent) => new_parent.map(i64::from),
+            None => current_row.parent_id,
+        };
+
+        let result = sqlx::query!(
+            "UPDATE items SET name = $1, parent_id = $2 WHERE id = $3",
+            name,
+            parent,
+            i64::from(id)
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        if result.rows_affected() == 0 {
+            return Err(format!("Entity with ID {} not found", i64::from(id)));
+        }
+
+        Ok(())
     }
 
     async fn delete_entity(&self, id: EntityId) -> Result<(), String> {
@@ -180,5 +218,28 @@ mod postgres_tests {
         .unwrap();
 
         assert!(row.deleted.is_some());
+    }
+
+    #[sqlx::test]
+    async fn test_update_item_name_only(pool: PgPool) {
+        let command = PostgresItemCommand::new(pool.clone());
+        let item = command
+            .create_item(EntityName::from("Old Name"), None)
+            .await;
+
+        let changes = PartialEntity {
+            name: Some(EntityName::from("New Name")),
+            parent: None, // No change to parent
+        };
+
+        let result = command.update_entity(item.id, changes).await;
+        assert!(result.is_ok());
+
+        let row = sqlx::query!("SELECT name FROM items WHERE id = $1", i64::from(item.id))
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+        assert_eq!(row.name, "New Name");
     }
 }

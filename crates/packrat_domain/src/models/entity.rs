@@ -1,3 +1,5 @@
+use crate::models::partial_entity::PartialEntity;
+
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct EntityId(i64);
 
@@ -13,8 +15,14 @@ impl From<EntityId> for i64 {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct EntityName(String);
+
+impl EntityName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
 
 impl From<&str> for EntityName {
     fn from(s: &str) -> Self {
@@ -25,6 +33,12 @@ impl From<&str> for EntityName {
 impl From<String> for EntityName {
     fn from(s: String) -> Self {
         EntityName(s)
+    }
+}
+
+impl From<EntityName> for String {
+    fn from(name: EntityName) -> Self {
+        name.0
     }
 }
 
@@ -75,7 +89,7 @@ impl From<EntityTimestamp> for chrono::DateTime<chrono::Utc> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Entity {
     pub id: EntityId,
     pub name: EntityName,
@@ -98,6 +112,25 @@ impl Entity {
             parent,
             created,
             deleted,
+        }
+    }
+
+    pub fn apply_partial(&mut self, changes: PartialEntity) {
+        if let Some(name) = changes.name {
+            self.name = name;
+        }
+        if let Some(parent) = changes.parent {
+            self.parent = parent;
+        }
+    }
+
+    pub fn is_deleted(&self) -> bool {
+        self.deleted.is_some()
+    }
+
+    pub fn mark_as_deleted(&mut self) {
+        if self.deleted.is_none() {
+            self.deleted = Some(EntityTimestamp::now());
         }
     }
 }
