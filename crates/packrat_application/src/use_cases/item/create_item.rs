@@ -2,7 +2,11 @@ use packrat_domain::entity::{Entity, EntityId, EntityName};
 
 use crate::ports::ItemCommandPort;
 
-pub async fn execute(port: &impl ItemCommandPort, name: EntityName, parent: Option<EntityId>) -> Entity {
+pub async fn execute(
+    port: &impl ItemCommandPort,
+    name: EntityName,
+    parent: Option<EntityId>,
+) -> Entity {
     port.create_item(name, parent).await
 }
 
@@ -10,14 +14,23 @@ pub async fn execute(port: &impl ItemCommandPort, name: EntityName, parent: Opti
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use packrat_domain::entity::EntityId;
+    use packrat_domain::entity::{EntityId, EntityTimestamp};
 
     struct MockItemCommand;
 
     #[async_trait]
     impl ItemCommandPort for MockItemCommand {
-        async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
-            Entity::new(EntityId::from(99), name, parent)
+        async fn create_item(
+            &self,
+            name: EntityName,
+            parent: Option<EntityId>,
+        ) -> Entity {
+            let created = EntityTimestamp::now();
+            let deleted = None;
+            Entity::new(EntityId::from(99), name, parent, created, deleted)
+        }
+        async fn delete_entity(&self, _id: EntityId) -> Result<(), String> {
+            unimplemented!()
         }
     }
 

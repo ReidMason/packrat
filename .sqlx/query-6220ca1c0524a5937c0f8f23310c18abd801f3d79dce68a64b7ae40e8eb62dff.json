@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO items (name, parent_id) VALUES ($1, $2) RETURNING id",
+  "query": "INSERT INTO items (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -12,12 +12,14 @@
     "parameters": {
       "Left": [
         "Text",
-        "Int8"
+        "Int8",
+        "Timestamptz",
+        "Timestamptz"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "6d2e87734633a9b0729d348bdd4a0c1cc495fef04feead2fd9d2acbc56b8dac1"
+  "hash": "6220ca1c0524a5937c0f8f23310c18abd801f3d79dce68a64b7ae40e8eb62dff"
 }
