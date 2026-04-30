@@ -1,0 +1,16 @@
+[package]
+name = "packrat_api"
+version = "0.1.0"
+edition = "2024"
+description = "HTTP API (Axum) for Packrat inventory."
+
+[dependencies]
+axum = { version = "0.8", features = ["macros", "json"] }
+packrat_application = { path = "../packrat_application" }
+packrat_domain = { path = "../packrat_domain" }
+packrat_infrastructure = { path = "../packrat_infrastructure" }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
