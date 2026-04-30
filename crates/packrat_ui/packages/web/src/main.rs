@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ui::{Navbar, TailwindConfig};
+use ui::{Navbar, TailwindConfig, ThemeToggle};
 use views::{Blog, Home};
 
 mod views;
@@ -24,9 +24,10 @@ fn main() {
 fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
-        TailwindConfig {}
+        TailwindConfig {
+            Router::<Route> {}
+        }
 
-        Router::<Route> {}
     }
 }
 
@@ -44,8 +45,8 @@ fn WebNavbar() -> Element {
                 to: Route::Blog { id: 1 },
                 "Blog"
             }
+            ThemeToggle {}
         }
-
         Outlet::<Route> {}
     }
 }
