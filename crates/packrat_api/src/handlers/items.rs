@@ -4,15 +4,21 @@ use axum::http::StatusCode;
 use packrat_application::{ItemCommandPort, create_item, get_item};
 use packrat_domain::entity::{EntityId, EntityName};
 
-use crate::dto::{CreateItemDto, ItemDto};
+use crate::dto::{CreateItemDto, ErrorBody, ItemDto, SuccessBody};
 use crate::state::AppState;
 
 pub async fn create_item_handler(
     State(state): State<AppState>,
     Json(body): Json<CreateItemDto>,
-) -> Result<(StatusCode, Json<ItemDto>), (StatusCode, String)> {
+) -> Result<
+    (StatusCode, Json<SuccessBody<ItemDto>>),
+    (StatusCode, Json<ErrorBody>),
+> {
     if body.name.trim().is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "name must not be empty".into()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorBody::message("name must not be empty")),
+        ));
     }
     let entity = create_item(
         state.command.as_ref(),
@@ -20,23 +26,29 @@ pub async fn create_item_handler(
         body.parent_id.map(EntityId::from),
     )
     .await;
-    Ok((StatusCode::CREATED, Json(ItemDto::from_entity(entity))))
+    Ok((
+        StatusCode::CREATED,
+        Json(SuccessBody::new(ItemDto::from_entity(entity))),
+    ))
 }
 
 pub async fn get_item_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ItemDto>, StatusCode> {
-    get_item(state.query.as_ref(), EntityId::from(id))
-        .await
-        .map(|e| Json(ItemDto::from_entity(e)))
-        .ok_or(StatusCode::NOT_FOUND)
+) -> Result<Json<SuccessBody<ItemDto>>, (StatusCode, Json<ErrorBody>)> {
+    match get_item(state.query.as_ref(), EntityId::from(id)).await {
+        Some(e) => Ok(Json(SuccessBody::new(ItemDto::from_entity(e)))),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorBody::message("item not found")),
+        )),
+    }
 }
 
 pub async fn delete_item_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<StatusCode, (StatusCode, String)> {
+) -> Result<StatusCode, (StatusCode, Json<ErrorBody>)> {
     state
         .command
         .delete_entity(EntityId::from(id))
@@ -50,6 +62,6 @@ pub async fn delete_item_handler(
             } else {
                 StatusCode::INTERNAL_SERVER_ERROR
             };
-            (status, e)
+            (status, Json(ErrorBody::message(e)))
         })
 }

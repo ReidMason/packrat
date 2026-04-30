@@ -1,6 +1,7 @@
 use packrat_domain::entity::Entity;
 use serde::Serialize;
 
+/// **DTO** — JSON body for `POST /api/items`.
 #[derive(serde::Deserialize)]
 pub struct CreateItemDto {
     pub name: String,
@@ -8,6 +9,7 @@ pub struct CreateItemDto {
     pub parent_id: Option<i64>,
 }
 
+/// **DTO** — `data` payload inside [`SuccessBody`](super::SuccessBody) for item reads/creates.
 #[derive(Serialize)]
 pub struct ItemDto {
     pub id: i64,
