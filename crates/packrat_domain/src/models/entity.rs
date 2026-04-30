@@ -42,6 +42,33 @@ impl std::ops::DerefMut for EntityName {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+pub struct EntityTimestamp(chrono::DateTime<chrono::Utc>);
+
+impl EntityTimestamp {
+    pub fn now() -> Self {
+        Self(chrono::Utc::now())
+    }
+}
+
+impl std::fmt::Display for EntityTimestamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_rfc3339())
+    }
+}
+
+impl From<chrono::DateTime<chrono::Utc>> for EntityTimestamp {
+    fn from(dt: chrono::DateTime<chrono::Utc>) -> Self {
+        Self(dt)
+    }
+}
+
+impl From<EntityTimestamp> for chrono::DateTime<chrono::Utc> {
+    fn from(t: EntityTimestamp) -> Self {
+        t.0
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Entity {
     pub id: EntityId,
