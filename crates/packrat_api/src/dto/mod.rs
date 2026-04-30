@@ -9,7 +9,9 @@
 //! you version routes or coordinate clients.
 
 mod envelope;
+mod health;
 mod items;
 
 pub use envelope::{ErrorBody, SuccessBody};
+pub use health::HealthDto;
 pub use items::{CreateItemDto, ItemDto};
