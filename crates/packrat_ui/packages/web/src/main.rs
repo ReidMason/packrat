@@ -24,9 +24,10 @@ fn main() {
 fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
-        TailwindConfig {}
+        TailwindConfig {
+            Router::<Route> {}
+        }
 
-        Router::<Route> {}
     }
 }
 
@@ -45,7 +46,6 @@ fn WebNavbar() -> Element {
                 "Blog"
             }
         }
-
         Outlet::<Route> {}
     }
 }
