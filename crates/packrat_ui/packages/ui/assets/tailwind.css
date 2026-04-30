@@ -13,9 +13,8 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --color-app-base: var(--app-base);
-    --color-app-text: var(--app-text);
-    --color-app-accent: var(--app-accent);
+    --color-ui-bg: #1e1e2e;
+    --color-ui-text: #cdd6f4;
   }
 }
 @layer base {
@@ -170,9 +169,6 @@
   .visible {
     visibility: visible;
   }
-  .static {
-    position: static;
-  }
   .m-2 {
     margin: calc(var(--spacing) * 2);
   }
@@ -188,18 +184,8 @@
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
   }
-  .rounded-full {
-    border-radius: calc(infinity * 1px);
-  }
-  .border {
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-  }
-  .border-app-accent {
-    border-color: var(--color-app-accent);
-  }
-  .bg-app-base {
-    background-color: var(--color-app-base);
+  .bg-ui-bg {
+    background-color: var(--color-ui-bg);
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
@@ -207,22 +193,8 @@
   .p-4 {
     padding: calc(var(--spacing) * 4);
   }
-  .px-3 {
-    padding-inline: calc(var(--spacing) * 3);
-  }
-  .py-1 {
-    padding-block: calc(var(--spacing) * 1);
-  }
-  .text-app-accent {
-    color: var(--color-app-accent);
-  }
-  .text-app-text {
-    color: var(--color-app-text);
-  }
-  .transition-all {
-    transition-property: all;
-    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
-    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  .text-ui-text {
+    color: var(--color-ui-text);
   }
   .transition-colors {
     transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
@@ -237,44 +209,6 @@
     --tw-ease: var(--ease-in-out);
     transition-timing-function: var(--ease-in-out);
   }
-  .hover\:bg-app-accent {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-app-accent);
-      }
-    }
-  }
-  .hover\:text-app-base {
-    &:hover {
-      @media (hover: hover) {
-        color: var(--color-app-base);
-      }
-    }
-  }
-}
-:root {
-  --app-base: #1e1e2e;
-  --app-base-dark: #181825;
-  --app-base-light: #313244;
-  --app-text: #cdd6f4;
-  --app-subtext: #a6adc8;
-  --app-accent: #cba6f7;
-  --app-accent-soft: #b4befe;
-  --app-muted: #6c7086;
-  --app-red: #f38ba8;
-  --app-green: #a6e3a1;
-}
-.theme-tokyo-night {
-  --app-base: #24283b;
-  --app-base-dark: #1f2335;
-  --app-base-light: #2f3549;
-  --app-text: #a9b1d6;
-  --app-subtext: #9aa5ce;
-  --app-accent: #7aa2f7;
-  --app-accent-soft: #bb9af7;
-  --app-muted: #565f89;
-  --app-red: #f7768e;
-  --app-green: #9ece6a;
 }
 @property --tw-rotate-x {
   syntax: "*";
@@ -296,11 +230,6 @@
   syntax: "*";
   inherits: false;
 }
-@property --tw-border-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
 @property --tw-duration {
   syntax: "*";
   inherits: false;
@@ -317,7 +246,6 @@
       --tw-rotate-z: initial;
       --tw-skew-x: initial;
       --tw-skew-y: initial;
-      --tw-border-style: solid;
       --tw-duration: initial;
       --tw-ease: initial;
     }
