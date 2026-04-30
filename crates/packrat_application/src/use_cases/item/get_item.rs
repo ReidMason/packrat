@@ -15,12 +15,18 @@ mod tests {
 
     struct MockItemQuery;
 
+    fn test_timestamp() -> EntityTimestamp {
+        chrono::DateTime::from_timestamp(1735689600, 0)
+            .unwrap()
+            .into()
+    }
+
     fn stub_item(id: EntityId) -> Entity {
         Entity::new(
             id,
             EntityName::from("from infrastructure stub"),
             Some(EntityId::from(1)),
-            EntityTimestamp::now(),
+            test_timestamp(),
             None,
         )
     }
