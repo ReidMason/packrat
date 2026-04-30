@@ -20,8 +20,14 @@ mod tests {
 
     #[async_trait]
     impl ItemCommandPort for MockItemCommand {
-        async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
-            Entity::new(EntityId::from(99), name, parent)
+        async fn create_item(
+            &self,
+            name: EntityName,
+            parent: Option<EntityId>,
+        ) -> Entity {
+            let created = chrono::Utc::now();
+            let deleted = None;
+            Entity::new(EntityId::from(99), name, parent, created, deleted)
         }
         async fn delete_entity(&self, _id: EntityId) -> Result<(), String> {
             unimplemented!()

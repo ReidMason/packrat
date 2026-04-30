@@ -20,6 +20,8 @@ mod tests {
             id,
             EntityName::from("from infrastructure stub"),
             Some(EntityId::from(1)),
+            chrono::Utc::now(),
+            None,
         )
     }
 

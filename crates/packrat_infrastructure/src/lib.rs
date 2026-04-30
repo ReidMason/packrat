@@ -15,6 +15,8 @@ fn stub_item(id: EntityId) -> Entity {
         id,
         EntityName::from("from infrastructure stub"),
         Some(EntityId::from(1)),
+        chrono::Utc::now(),
+        None,
     )
 }
 
@@ -48,7 +50,9 @@ impl Default for StubItemCommand {
 impl ItemCommandPort for StubItemCommand {
     async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
         let id = EntityId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
-        Entity::new(id, name, parent)
+        let created = chrono::Utc::now();
+        let deleted = None;
+        Entity::new(id, name, parent, created, deleted)
     }
     async fn delete_entity(&self, id: EntityId) -> Result<(), String> {
         let current_max = self.next_id.load(Ordering::Relaxed);

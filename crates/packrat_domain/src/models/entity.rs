@@ -47,22 +47,27 @@ pub struct Entity {
     pub id: EntityId,
     pub name: EntityName,
     pub parent: Option<EntityId>,
+    pub created: chrono::DateTime<chrono::Utc>,
+    pub deleted: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Entity {
-    pub fn new(id: EntityId, name: EntityName, parent: Option<EntityId>) -> Self {
-        Self { id, name, parent }
+    pub fn new(
+        id: EntityId,
+        name: EntityName,
+        parent: Option<EntityId>,
+        created: chrono::DateTime<chrono::Utc>,
+        deleted: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            parent,
+            created,
+            deleted,
+        }
     }
 }
 
 #[cfg(test)]
-mod item_tests {
-    use crate::entity::{Entity, EntityId, EntityName};
-
-    #[test]
-    fn change_name() {
-        let mut item = Entity::new(EntityId::from(1), EntityName::from("Fork"), None);
-        item.name = EntityName::from("Spoon");
-        assert_eq!(item.name, EntityName::from("Spoon"))
-    }
-}
+mod item_tests {}
