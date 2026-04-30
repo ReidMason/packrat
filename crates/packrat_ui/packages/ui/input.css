@@ -1,4 +1,26 @@
 @import "tailwindcss";
+
+@theme {
+  --color-ui-bg: #1e1e2e; /* Main page background */
+  --color-ui-bg-dim: #181825; /* Sidebars, footers (Mantle) */
+  --color-ui-bg-accent: #313244; /* Cards, hovered items (Surface0) */
+
+  /* Text colors */
+  --color-ui-text: #cdd6f4; /* Primary text */
+  --color-ui-text-muted: #a6adc8; /* Secondary/Subtext */
+  --color-ui-text-dim: #6c7086; /* Disabled/Placeholder (Overlay0) */
+
+  /* Brand / Action colors */
+  --color-ui-primary: #cba6f7; /* Primary buttons, links (Mauve) */
+  --color-ui-secondary: #b4befe; /* Selection, focus (Lavender) */
+
+  /* Functional colors */
+  --color-ui-error: #f38ba8;
+  --color-ui-success: #a6e3a1;
+  --color-ui-warning: #f9e2af; /* Added Catppuccin Yellow */
+  --color-ui-info: #89b4fa;
+}
+
 @source "./src/**/*.{rs,html,css}";
 @source "../desktop/src/**/*.rs";
 @source "../mobile/src/**/*.rs";

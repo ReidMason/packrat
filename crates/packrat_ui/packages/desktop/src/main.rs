@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use ui::{TailwindConfig, Navbar};
+use ui::{Navbar, TailwindConfig};
 use views::{Blog, Home};
 
 mod views;
@@ -22,8 +22,9 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
-        TailwindConfig {}
-        Router::<Route> {
+        TailwindConfig {
+            Router::<Route> {
+            }
         }
     }
 }
