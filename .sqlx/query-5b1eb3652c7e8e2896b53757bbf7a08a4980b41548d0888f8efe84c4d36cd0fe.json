@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE items SET deleted = NOW() WHERE id = $1 AND deleted IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5b1eb3652c7e8e2896b53757bbf7a08a4980b41548d0888f8efe84c4d36cd0fe"
+}

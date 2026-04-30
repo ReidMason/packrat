@@ -8,14 +8,14 @@ use std::sync::atomic::{AtomicI64, Ordering};
 pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations};
 
 use packrat_application::{ItemCommandPort, ItemQueryPort};
-use packrat_domain::entity::{Entity, EntityId, EntityName};
+use packrat_domain::entity::{Entity, EntityId, EntityName, EntityTimestamp};
 
 fn stub_item(id: EntityId) -> Entity {
     Entity::new(
         id,
         EntityName::from("from infrastructure stub"),
         Some(EntityId::from(1)),
-        chrono::Utc::now(),
+        EntityTimestamp::now(),
         None,
     )
 }
@@ -50,7 +50,7 @@ impl Default for StubItemCommand {
 impl ItemCommandPort for StubItemCommand {
     async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
         let id = EntityId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
-        let created = chrono::Utc::now();
+        let created = EntityTimestamp::now();
         let deleted = None;
         Entity::new(id, name, parent, created, deleted)
     }

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use packrat_application::{ItemCommandPort, ItemQueryPort};
+use packrat_domain::entity::EntityTimestamp;
 use packrat_domain::entity::{Entity, EntityId, EntityName};
 use sqlx::PgPool;
 use sqlx::Row;
@@ -18,15 +19,15 @@ impl PostgresItemCommand {
 #[async_trait]
 impl ItemCommandPort for PostgresItemCommand {
     async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
-        let created = chrono::Utc::now();
+        let created = EntityTimestamp::now();
         let deleted = None;
         // TODO: This should be updated to entities over items
         let id: i64 = sqlx::query_scalar!(
             "INSERT INTO items (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
             name.as_str(),
             parent.map(i64::from) as Option<i64>,
-            created,
-            deleted,
+            chrono::DateTime::from(created),
+            deleted.map(chrono::DateTime::from) as Option<chrono::DateTime<chrono::Utc>>,
         )
         .fetch_one(&self.pool)
         .await
@@ -84,14 +85,19 @@ impl ItemQueryPort for PostgresItemQuery {
         let id: i64 = row.try_get("id").ok()?;
         let name: String = row.try_get("name").ok()?;
         let parent_id: Option<i64> = row.try_get("parent_id").ok()?;
-        let created: chrono::DateTime<chrono::Utc> = row.try_get("created").ok()?;
-        let deleted: Option<chrono::DateTime<chrono::Utc>> = row.try_get("deleted").ok()?;
+        let created: chrono::DateTime<chrono::Utc> = row
+            .try_get::<'_, chrono::DateTime<chrono::Utc>, _>("created")
+            .ok()?;
+        let deleted: Option<chrono::DateTime<chrono::Utc>> = row
+            .try_get::<'_, Option<chrono::DateTime<chrono::Utc>>, _>("deleted")
+            .ok()?;
+
         Some(Entity::new(
             EntityId::from(id),
             EntityName::from(name),
             parent_id.map(EntityId::from),
-            created,
-            deleted,
+            EntityTimestamp::from(created),
+            deleted.map(EntityTimestamp::from),
         ))
     }
 }

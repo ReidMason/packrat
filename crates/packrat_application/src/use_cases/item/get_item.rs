@@ -9,7 +9,7 @@ pub async fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> 
 #[cfg(test)]
 mod tests {
     use async_trait::async_trait;
-    use packrat_domain::entity::EntityName;
+    use packrat_domain::entity::{EntityName, EntityTimestamp};
 
     use super::*;
 
@@ -20,7 +20,7 @@ mod tests {
             id,
             EntityName::from("from infrastructure stub"),
             Some(EntityId::from(1)),
-            chrono::Utc::now(),
+            EntityTimestamp::now(),
             None,
         )
     }

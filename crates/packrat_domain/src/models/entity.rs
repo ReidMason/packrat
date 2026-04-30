@@ -64,8 +64,8 @@ impl From<chrono::DateTime<chrono::Utc>> for EntityTimestamp {
 }
 
 impl From<EntityTimestamp> for chrono::DateTime<chrono::Utc> {
-    fn from(t: EntityTimestamp) -> Self {
-        t.0
+    fn from(ts: EntityTimestamp) -> Self {
+        ts.0
     }
 }
 
@@ -74,8 +74,8 @@ pub struct Entity {
     pub id: EntityId,
     pub name: EntityName,
     pub parent: Option<EntityId>,
-    pub created: chrono::DateTime<chrono::Utc>,
-    pub deleted: Option<chrono::DateTime<chrono::Utc>>,
+    pub created: EntityTimestamp,
+    pub deleted: Option<EntityTimestamp>,
 }
 
 impl Entity {
@@ -83,8 +83,8 @@ impl Entity {
         id: EntityId,
         name: EntityName,
         parent: Option<EntityId>,
-        created: chrono::DateTime<chrono::Utc>,
-        deleted: Option<chrono::DateTime<chrono::Utc>>,
+        created: EntityTimestamp,
+        deleted: Option<EntityTimestamp>,
     ) -> Self {
         Self {
             id,

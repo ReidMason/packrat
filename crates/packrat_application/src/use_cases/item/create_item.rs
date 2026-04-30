@@ -14,7 +14,7 @@ pub async fn execute(
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use packrat_domain::entity::EntityId;
+    use packrat_domain::entity::{EntityId, EntityTimestamp};
 
     struct MockItemCommand;
 
@@ -25,7 +25,7 @@ mod tests {
             name: EntityName,
             parent: Option<EntityId>,
         ) -> Entity {
-            let created = chrono::Utc::now();
+            let created = EntityTimestamp::now();
             let deleted = None;
             Entity::new(EntityId::from(99), name, parent, created, deleted)
         }
