@@ -2,12 +2,16 @@ default:
     @just --list
 
 test-core *args:
+    #!/usr/bin/env bash
+    export DATABASE_URL="${DATABASE_URL:-postgres://packrat:packrat@localhost:5432/packrat?sslmode=disable}"
     cargo test --workspace --exclude packrat_ui {{args}}
 
 test-ui *args:
     cargo test --manifest-path crates/packrat_ui/Cargo.toml --workspace {{args}}
 
 coverage:
+    #!/usr/bin/env bash
+    export DATABASE_URL="${DATABASE_URL:-postgres://packrat:packrat@localhost:5432/packrat?sslmode=disable}"
     cargo tarpaulin --workspace --timeout 300 --out Html --output-dir coverage
 
 # Regenerate `.sqlx/` after changing `query_*!` SQL or migrations.
