@@ -3,12 +3,21 @@
 mod postgres;
 
 use async_trait::async_trait;
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::{
+    collections::HashMap,
+    sync::{
+        Mutex,
+        atomic::{AtomicI64, Ordering},
+    },
+};
 
 pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations};
 
 use packrat_application::{ItemCommandPort, ItemQueryPort};
-use packrat_domain::entity::{Entity, EntityId, EntityName, EntityTimestamp};
+use packrat_domain::{
+    entity::{Entity, EntityId, EntityName, EntityTimestamp},
+    models::partial_entity::PartialEntity,
+};
 
 fn stub_item(id: EntityId) -> Entity {
     Entity::new(
@@ -36,12 +45,14 @@ impl ItemQueryPort for StubItemQuery {
 
 pub struct StubItemCommand {
     next_id: AtomicI64,
+    items: Mutex<HashMap<i64, Entity>>,
 }
 
 impl Default for StubItemCommand {
     fn default() -> Self {
         Self {
             next_id: AtomicI64::new(1),
+            items: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -49,19 +60,48 @@ impl Default for StubItemCommand {
 #[async_trait]
 impl ItemCommandPort for StubItemCommand {
     async fn create_item(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
-        let id = EntityId::from(self.next_id.fetch_add(1, Ordering::Relaxed));
-        let created = EntityTimestamp::now();
-        let deleted = None;
-        Entity::new(id, name, parent, created, deleted)
+        let id_raw = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let id = EntityId::from(id_raw);
+        let entity = Entity::new(id, name, parent, EntityTimestamp::now(), None);
+
+        let mut items = self.items.lock().unwrap();
+        items.insert(id_raw, entity.clone());
+
+        entity
     }
     async fn delete_entity(&self, id: EntityId) -> Result<(), String> {
-        let current_max = self.next_id.load(Ordering::Relaxed);
-        let target_id = i64::from(id);
+        let mut items = self.items.lock().map_err(|_| "Poisoned lock")?;
+        let id_raw = i64::from(id);
 
-        if target_id > 0 && target_id < current_max {
+        if let Some(entity) = items.get_mut(&id_raw) {
+            if entity.is_deleted() {
+                return Err(format!("Item with ID {} already deleted", id_raw));
+            }
+
+            entity.mark_as_deleted();
+
             Ok(())
         } else {
-            Err("Entity not found in stub memory".to_string())
+            Err(format!(
+                "Entity with ID {} not found in stub memory",
+                id_raw
+            ))
+        }
+    }
+    async fn update_entity(&self, id: EntityId, changes: PartialEntity) -> Result<(), String> {
+        let mut storage = self.items.lock().unwrap();
+        let id_raw = i64::from(id);
+
+        if let Some(entity) = storage.get_mut(&id_raw) {
+            if let Some(new_name) = changes.name {
+                entity.name = new_name;
+            }
+            if let Some(new_parent) = changes.parent {
+                entity.parent = new_parent;
+            }
+            Ok(())
+        } else {
+            Err("Entity not found".into())
         }
     }
 }
