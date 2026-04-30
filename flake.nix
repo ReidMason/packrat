@@ -108,7 +108,6 @@
           sqlx-cli
 
           # Android
-          nix-ld
           androidComposition.androidsdk
         ]
         ++ (
