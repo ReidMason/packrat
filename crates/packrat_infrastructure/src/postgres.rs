@@ -49,13 +49,17 @@ impl ItemCommandPort for PostgresItemCommand {
             return Err("Cannot Delete: Entity has active children".into());
         }
 
-        sqlx::query!(
+        let result = sqlx::query!(
             "UPDATE items SET deleted = NOW() WHERE id = $1 AND deleted IS NULL",
             i64::from(id),
         )
         .execute(&self.pool)
         .await
         .map_err(|err| err.to_string())?;
+
+        if result.rows_affected() == 0 {
+            return Err(format!("Item with ID {} not found", i64::from(id)));
+        }
 
         Ok(())
     }
