@@ -6,7 +6,7 @@ mod state;
 use std::sync::Arc;
 
 use packrat_infrastructure::{
-    PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations,
+    PostgresItemCommand, PostgresItemQuery, PostgresReadiness, connect_pool, run_migrations,
 };
 
 use crate::state::AppState;
@@ -27,6 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     run_migrations(&pool).await?;
 
     let state = AppState {
+        readiness: PostgresReadiness::new(pool.clone()),
         command: Arc::new(PostgresItemCommand::new(pool.clone())),
         query: Arc::new(PostgresItemQuery::new(pool)),
     };
