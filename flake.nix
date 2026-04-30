@@ -57,7 +57,7 @@
       };
       androidSdk = androidComposition.androidsdk;
 
-      runtimeDeps = with pkgs; [
+      linuxDeps = with pkgs; [
         webkitgtk_4_1
         gtk3
         cairo
@@ -73,6 +73,20 @@
         gst_all_1.gst-plugins-good
       ];
 
+      appleDeps = with pkgs.darwin.apple_sdk.frameworks; [
+        AppKit
+        WebKit
+        Security
+        CoreServices
+        CoreGraphics
+        Foundation
+      ];
+
+      runtimeDeps =
+        if pkgs.stdenv.isDarwin
+        then appleDeps
+        else linuxDeps;
+
       buildInputs = with pkgs;
         [
           # Rust toolchain with WASM support for Web
@@ -82,6 +96,7 @@
               "wasm32-unknown-unknown"
               "aarch64-linux-android"
               "x86_64-linux-android"
+              "aarch64-apple-darwin"
             ];
           })
 
@@ -96,6 +111,11 @@
           nix-ld
           androidComposition.androidsdk
         ]
+        ++ (
+          if pkgs.stdenv.isLinux
+          then [nix-ld]
+          else []
+        )
         ++ runtimeDeps;
     in {
       devShells.default = pkgs.mkShell {
