@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ui::{Navbar, TailwindConfig, ThemeToggle};
+use ui::{Navbar, TailwindConfig};
 use views::{Blog, Home};
 
 mod views;
@@ -45,7 +45,6 @@ fn WebNavbar() -> Element {
                 to: Route::Blog { id: 1 },
                 "Blog"
             }
-            ThemeToggle {}
         }
         Outlet::<Route> {}
     }
