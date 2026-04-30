@@ -7,7 +7,6 @@ description = "Application layer: ports, use case handlers. Depends on domain on
 [dependencies]
 async-trait = "0.1"
 packrat_domain = { path = "../packrat_domain" }
-chrono = "0.4.44"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

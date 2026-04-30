@@ -49,6 +49,12 @@ impl EntityTimestamp {
     pub fn now() -> Self {
         Self(chrono::Utc::now())
     }
+
+    pub fn static_for_tests() -> Self {
+        chrono::DateTime::from_timestamp(1735689600, 0)
+            .unwrap()
+            .into()
+    }
 }
 
 impl std::fmt::Display for EntityTimestamp {

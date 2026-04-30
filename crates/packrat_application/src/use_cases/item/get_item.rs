@@ -16,9 +16,7 @@ mod tests {
     struct MockItemQuery;
 
     fn test_timestamp() -> EntityTimestamp {
-        chrono::DateTime::from_timestamp(1735689600, 0)
-            .unwrap()
-            .into()
+        EntityTimestamp::static_for_tests()
     }
 
     fn stub_item(id: EntityId) -> Entity {
