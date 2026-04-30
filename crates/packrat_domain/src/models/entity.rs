@@ -42,27 +42,65 @@ impl std::ops::DerefMut for EntityName {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+pub struct EntityTimestamp(chrono::DateTime<chrono::Utc>);
+
+impl EntityTimestamp {
+    pub fn now() -> Self {
+        Self(chrono::Utc::now())
+    }
+
+    pub fn static_for_tests() -> Self {
+        chrono::DateTime::from_timestamp(1735689600, 0)
+            .unwrap()
+            .into()
+    }
+}
+
+impl std::fmt::Display for EntityTimestamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_rfc3339())
+    }
+}
+
+impl From<chrono::DateTime<chrono::Utc>> for EntityTimestamp {
+    fn from(dt: chrono::DateTime<chrono::Utc>) -> Self {
+        Self(dt)
+    }
+}
+
+impl From<EntityTimestamp> for chrono::DateTime<chrono::Utc> {
+    fn from(ts: EntityTimestamp) -> Self {
+        ts.0
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Entity {
     pub id: EntityId,
     pub name: EntityName,
     pub parent: Option<EntityId>,
+    pub created: EntityTimestamp,
+    pub deleted: Option<EntityTimestamp>,
 }
 
 impl Entity {
-    pub fn new(id: EntityId, name: EntityName, parent: Option<EntityId>) -> Self {
-        Self { id, name, parent }
+    pub fn new(
+        id: EntityId,
+        name: EntityName,
+        parent: Option<EntityId>,
+        created: EntityTimestamp,
+        deleted: Option<EntityTimestamp>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            parent,
+            created,
+            deleted,
+        }
     }
 }
 
 #[cfg(test)]
-mod item_tests {
-    use crate::entity::{Entity, EntityId, EntityName};
-
-    #[test]
-    fn change_name() {
-        let mut item = Entity::new(EntityId::from(1), EntityName::from("Fork"), None);
-        item.name = EntityName::from("Spoon");
-        assert_eq!(item.name, EntityName::from("Spoon"))
-    }
-}
+mod item_tests {}

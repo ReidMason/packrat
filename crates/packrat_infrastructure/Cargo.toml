@@ -13,5 +13,7 @@ sqlx = { version = "0.8", default-features = false, features = [
     "migrate",
     "postgres",
     "runtime-tokio",
+    "chrono",
 ] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+chrono = "0.4.44"

@@ -9,17 +9,23 @@ pub async fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> 
 #[cfg(test)]
 mod tests {
     use async_trait::async_trait;
-    use packrat_domain::entity::EntityName;
+    use packrat_domain::entity::{EntityName, EntityTimestamp};
 
     use super::*;
 
     struct MockItemQuery;
+
+    fn test_timestamp() -> EntityTimestamp {
+        EntityTimestamp::static_for_tests()
+    }
 
     fn stub_item(id: EntityId) -> Entity {
         Entity::new(
             id,
             EntityName::from("from infrastructure stub"),
             Some(EntityId::from(1)),
+            test_timestamp(),
+            None,
         )
     }
 
