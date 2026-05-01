@@ -5,5 +5,5 @@ mod readiness;
 
 pub use envelope::{ErrorBody, SuccessBody};
 pub use health::HealthDto;
-pub use items::{CreateItemDto, ItemDto};
+pub use items::{CreateItemDto, ItemDto, SearchItemsDto};
 pub use readiness::ReadyDto;

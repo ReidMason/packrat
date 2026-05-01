@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-packrat-api",
     "name": "Packrat API",
-    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **GET /api/items** — list active (non-deleted) items.",
+    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **GET /api/items** — list active (non-deleted) items.\n- **POST /api/items/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -47,6 +47,25 @@
             "header": [],
             "url": "{{base_url}}/api/items",
             "description": "Returns `{ \"data\": [ ItemDto, ... ] }` for all items where `deleted` is null, ordered by name (case-insensitive)."
+          },
+          "response": []
+        },
+        {
+          "name": "Search items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": null,\n  \"fuzzyname\": \"tool\"\n}"
+            },
+            "url": "{{base_url}}/api/items/search",
+            "description": "Body JSON: optional `name` (exact match on stored name, case-sensitive) and optional `fuzzyname` (case-insensitive substring). At least one must be non-empty. Both may be set; filters are combined with AND. Returns `{ \"data\": [ ItemDto, ... ] }` for active items only."
           },
           "response": []
         },

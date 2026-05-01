@@ -9,6 +9,15 @@ pub struct CreateItemDto {
     pub parent_id: Option<i64>,
 }
 
+/// **DTO** — JSON body for `POST /api/items/search`.
+#[derive(serde::Deserialize)]
+pub struct SearchItemsDto {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub fuzzyname: Option<String>,
+}
+
 /// **DTO** — `data` payload inside [`SuccessBody`](super::SuccessBody) for item reads/creates.
 #[derive(Serialize)]
 pub struct ItemDto {

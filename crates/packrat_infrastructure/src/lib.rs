@@ -15,7 +15,7 @@ use std::{
 pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, ping_database, run_migrations};
 pub use readiness::PostgresReadiness;
 
-use packrat_application::{ItemCommandPort, ItemQueryPort};
+use packrat_application::{ItemCommandPort, ItemQueryPort, ItemSearchQuery};
 use packrat_domain::{
     entity::{Entity, EntityId, EntityName, EntityTimestamp},
     models::partial_entity::PartialEntity,
@@ -46,6 +46,35 @@ impl ItemQueryPort for StubItemQuery {
 
     async fn list_active_items(&self) -> Vec<Entity> {
         vec![stub_item(EntityId::from(1))]
+    }
+
+    async fn search_items(&self, query: &ItemSearchQuery) -> Vec<Entity> {
+        self.list_active_items()
+            .await
+            .into_iter()
+            .filter(|e| {
+                let name_ok = query
+                    .name
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(|n| e.name.as_str() == n)
+                    .unwrap_or(true);
+                let fuzzy_ok = query
+                    .fuzzyname
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(|n| {
+                        e.name
+                            .as_str()
+                            .to_lowercase()
+                            .contains(&n.to_lowercase())
+                    })
+                    .unwrap_or(true);
+                name_ok && fuzzy_ok
+            })
+            .collect()
     }
 }
 

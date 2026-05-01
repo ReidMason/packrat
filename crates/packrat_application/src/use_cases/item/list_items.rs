@@ -25,6 +25,13 @@ mod tests {
         async fn list_active_items(&self) -> Vec<Entity> {
             self.0.clone()
         }
+
+        async fn search_items(
+            &self,
+            _query: &crate::ports::ItemSearchQuery,
+        ) -> Vec<Entity> {
+            Vec::new()
+        }
     }
 
     fn entity(id: i64, name: &str) -> Entity {

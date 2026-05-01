@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use packrat_application::{ItemCommandPort, ItemQueryPort};
+use packrat_application::{ItemCommandPort, ItemQueryPort, ItemSearchQuery};
 use packrat_domain::entity::EntityTimestamp;
 use packrat_domain::entity::{Entity, EntityId, EntityName};
 use packrat_domain::models::partial_entity::PartialEntity;
@@ -151,6 +151,38 @@ impl ItemQueryPort for PostgresItemQuery {
         let rows = sqlx::query(
             "SELECT id, name, parent_id, created, deleted FROM items WHERE deleted IS NULL ORDER BY LOWER(name) ASC",
         )
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+
+        rows.iter()
+            .filter_map(|row| Self::entity_from_row(row))
+            .collect()
+    }
+
+    async fn search_items(&self, query: &ItemSearchQuery) -> Vec<Entity> {
+        let name = query
+            .name
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+        let fuzzy = query
+            .fuzzyname
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+
+        let rows = sqlx::query(
+            r#"SELECT id, name, parent_id, created, deleted FROM items
+               WHERE deleted IS NULL
+                 AND ($1::text IS NULL OR name = $1)
+                 AND ($2::text IS NULL OR strpos(lower(name), lower($2)) > 0)
+               ORDER BY LOWER(name) ASC"#,
+        )
+        .bind(name)
+        .bind(fuzzy)
         .fetch_all(&self.pool)
         .await
         .unwrap_or_default();

@@ -1,11 +1,42 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use packrat_application::{ItemCommandPort, create_item, get_item, list_items};
+use packrat_application::{create_item, get_item, list_items, search_items, ItemCommandPort, ItemSearchQuery};
 use packrat_domain::entity::{EntityId, EntityName};
 
-use crate::dto::{CreateItemDto, ErrorBody, ItemDto, SuccessBody};
+use crate::dto::{CreateItemDto, ErrorBody, ItemDto, SearchItemsDto, SuccessBody};
 use crate::state::AppState;
+
+pub async fn search_items_handler(
+    State(state): State<AppState>,
+    Json(body): Json<SearchItemsDto>,
+) -> Result<Json<SuccessBody<Vec<ItemDto>>>, (StatusCode, Json<ErrorBody>)> {
+    let name = body
+        .name
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let fuzzyname = body
+        .fuzzyname
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    if name.is_none() && fuzzyname.is_none() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorBody::message(
+                "at least one of name or fuzzyname must be a non-empty string",
+            )),
+        ));
+    }
+    let query = ItemSearchQuery { name, fuzzyname };
+    let entities = search_items(state.query.as_ref(), &query).await;
+    Ok(Json(SuccessBody::new(
+        entities.into_iter().map(ItemDto::from_entity).collect(),
+    )))
+}
 
 pub async fn list_items_handler(
     State(state): State<AppState>,
