@@ -63,21 +63,13 @@ pub fn Dashboard() -> Element {
                 }
                 div {
                     class: "flex flex-col sm:flex-row gap-3 sm:items-end",
-                    label {
-                        class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
-                        span { "Name contains" }
-                        input {
-                            class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
-                            r#type: "search",
-                            placeholder: "e.g. toolbox",
-                            value: "{search_term}",
-                            oninput: move |e| *search_term.write() = e.value(),
-                        }
-                    }
-                    button {
-                        class: "shrink-0 rounded-lg bg-ui-secondary text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50",
-                        disabled: search_busy(),
-                        onclick: move |_| {
+                    form {
+                        class: "contents",
+                        onsubmit: move |ev| {
+                            ev.prevent_default();
+                            if search_busy() {
+                                return;
+                            }
                             let base = api_base();
                             let q = search_term().trim().to_string();
                             spawn_search(
@@ -88,7 +80,23 @@ pub fn Dashboard() -> Element {
                                 recent,
                             );
                         },
-                        if search_busy() { "Searching…" } else { "Search" }
+                        label {
+                            class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
+                            span { "Name contains" }
+                            input {
+                                class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
+                                r#type: "search",
+                                placeholder: "e.g. toolbox",
+                                value: "{search_term}",
+                                oninput: move |e| *search_term.write() = e.value(),
+                            }
+                        }
+                        button {
+                            r#type: "submit",
+                            class: "shrink-0 rounded-lg bg-ui-secondary text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50",
+                            disabled: search_busy(),
+                            if search_busy() { "Searching…" } else { "Search" }
+                        }
                     }
                 }
                 if let Some(res) = search_results() {
