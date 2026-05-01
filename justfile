@@ -18,7 +18,7 @@ test-core *args:
 test-ui *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    just build-ui-css
+    just ui tailwind-build
     cargo test --manifest-path crates/packrat_ui/Cargo.toml --workspace {{args}}
 
 # Generate an HTML code coverage report using tarpaulin
