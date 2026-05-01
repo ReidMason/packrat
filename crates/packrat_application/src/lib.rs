@@ -2,4 +2,4 @@ pub mod ports;
 pub mod use_cases;
 
 pub use ports::{ItemCommandPort, ItemQueryPort, ReadinessPort};
-pub use use_cases::{check_readiness, create_item, get_item};
+pub use use_cases::{check_readiness, create_item, get_item, list_items};

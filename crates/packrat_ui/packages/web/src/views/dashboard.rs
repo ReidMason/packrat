@@ -1,56 +1,8 @@
 use dioxus::prelude::*;
 
+use crate::Route;
 use crate::api_client::{self, ItemDto};
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
-const RECENT_KEY: &str = "packrat_recent_v1";
-const MAX_RECENT: usize = 10;
-
-#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-struct RecentBrief {
-    id: i64,
-    name: String,
-}
-
-#[cfg(target_arch = "wasm32")]
-fn load_recent_disk() -> Vec<RecentBrief> {
-    try_load_recent().unwrap_or_default()
-}
-
-#[cfg(target_arch = "wasm32")]
-fn try_load_recent() -> Option<Vec<RecentBrief>> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    let json = storage.get_item(RECENT_KEY).ok().flatten()?;
-    serde_json::from_str(&json).ok()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn load_recent_disk() -> Vec<RecentBrief> {
-    Vec::new()
-}
-
-#[cfg(target_arch = "wasm32")]
-fn save_recent_disk(entries: &[RecentBrief]) {
-    if let Some(window) = web_sys::window() {
-        if let Ok(Some(storage)) = window.local_storage() {
-            if let Ok(json) = serde_json::to_string(entries) {
-                let _ = storage.set_item(RECENT_KEY, &json);
-            }
-        }
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn save_recent_disk(_entries: &[RecentBrief]) {}
-
-fn remember_recent(mut recent: Signal<Vec<RecentBrief>>, id: i64, name: String) {
-    let mut v = recent();
-    v.retain(|e| e.id != id);
-    v.insert(0, RecentBrief { id, name });
-    v.truncate(MAX_RECENT);
-    save_recent_disk(&v);
-    recent.set(v);
-}
+use super::recent_store::{remember_recent, save_recent_disk, RecentBrief};
 
 fn spawn_lookup(
     base: String,
@@ -76,10 +28,7 @@ fn spawn_lookup(
 #[component]
 pub fn Dashboard() -> Element {
     let api_base = use_context::<Signal<String>>();
-
-    let mut create_name = use_signal(|| String::new());
-    let mut create_parent = use_signal(|| String::new());
-    let mut create_flash = use_signal(|| Option::<String>::None);
+    let mut recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut lookup_id = use_signal(|| String::new());
     let looked_up = use_signal(|| Option::<Result<ItemDto, String>>::None);
@@ -87,12 +36,6 @@ pub fn Dashboard() -> Element {
 
     let mut delete_id = use_signal(|| String::new());
     let mut delete_flash = use_signal(|| Option::<String>::None);
-
-    let mut recent = use_signal(Vec::<RecentBrief>::new);
-
-    use_hook(move || {
-        recent.set(load_recent_disk());
-    });
 
     rsx! {
         div {
@@ -102,136 +45,64 @@ pub fn Dashboard() -> Element {
                 class: "space-y-1",
                 h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "Dashboard" }
                 p { class: "text-sm text-ui-text-muted max-w-2xl leading-relaxed",
-                    "Add inventory rows and open items by ID. The API does not list everything yet — ",
-                    "recent opens are kept in this browser only. API URL and health checks live under ",
-                    "Debug in the sidebar."
+                    "Open items by ID or remove them. Recent opens stay in this browser only. ",
+                    "API URL and health checks are under Debug."
+                }
+                Link {
+                    class: "inline-flex mt-4 rounded-lg bg-ui-primary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90",
+                    to: Route::NewItem {},
+                    "Add new item"
                 }
             }
 
-            div {
-                class: "grid gap-6 lg:grid-cols-2",
-                section {
-                    class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4 h-full",
-                    h2 { class: "text-lg font-medium text-ui-text", "Quick add" }
-                    p { class: "text-sm text-ui-text-muted",
-                        "Create a row in the tree. Parent ID is optional (e.g. lens under a camera body)."
-                    }
-                    div {
-                        class: "space-y-3",
-                        label {
-                            class: "flex flex-col gap-1 text-sm text-ui-text-muted",
-                            span { "Name" }
-                            input {
-                                class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
-                                placeholder: "e.g. Canon R5",
-                                value: "{create_name}",
-                                oninput: move |e| *create_name.write() = e.value(),
-                            }
-                        }
-                        label {
-                            class: "flex flex-col gap-1 text-sm text-ui-text-muted",
-                            span { "Parent ID (optional)" }
-                            input {
-                                class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
-                                placeholder: "empty for root",
-                                value: "{create_parent}",
-                                oninput: move |e| *create_parent.write() = e.value(),
-                            }
+            section {
+                class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4 max-w-2xl",
+                h2 { class: "text-lg font-medium text-ui-text", "Open by ID" }
+                p { class: "text-sm text-ui-text-muted", "Load one item from the API." }
+                div {
+                    class: "flex flex-col sm:flex-row gap-3 sm:items-end",
+                    label {
+                        class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
+                        span { "Item ID" }
+                        input {
+                            class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
+                            r#type: "text",
+                            inputmode: "numeric",
+                            placeholder: "e.g. 1",
+                            value: "{lookup_id}",
+                            oninput: move |e| *lookup_id.write() = e.value(),
                         }
                     }
                     button {
-                        class: "w-full sm:w-auto rounded-lg bg-ui-primary text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90",
+                        class: "shrink-0 rounded-lg bg-ui-secondary text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50",
+                        disabled: lookup_busy(),
                         onclick: move |_| {
                             let base = api_base();
-                            let name = create_name().trim().to_string();
-                            let parent_raw = create_parent().trim().to_string();
-                            let parent_id = if parent_raw.is_empty() {
-                                None
-                            } else {
-                                match parent_raw.parse::<i64>() {
-                                    Ok(id) => Some(id),
-                                    Err(_) => {
-                                        create_flash.set(Some("Parent ID must be a number.".into()));
-                                        return;
-                                    }
-                                }
-                            };
-                            if name.is_empty() {
-                                create_flash.set(Some("Name is required.".into()));
-                                return;
-                            }
-                            let recent_sig = recent;
-                            spawn(async move {
-                                match api_client::create_item(&base, name, parent_id).await {
-                                    Ok(item) => {
-                                        create_flash.set(Some(format!(
-                                            "Created #{} — {}",
-                                            item.id, item.name
-                                        )));
-                                        create_name.write().clear();
-                                        create_parent.write().clear();
-                                        remember_recent(recent_sig, item.id, item.name);
-                                    }
-                                    Err(e) => create_flash.set(Some(format!("Error: {e}"))),
-                                }
-                            });
+                            let raw = lookup_id().trim().to_string();
+                            spawn_lookup(
+                                base,
+                                raw,
+                                lookup_busy,
+                                looked_up,
+                                recent,
+                            );
                         },
-                        "Create item"
-                    }
-                    if let Some(msg) = create_flash() {
-                        p { class: "text-sm text-ui-info", "{msg}" }
+                        if lookup_busy() { "Loading…" } else { "Load" }
                     }
                 }
-
-                section {
-                    class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4 h-full",
-                    h2 { class: "text-lg font-medium text-ui-text", "Open by ID" }
-                    p { class: "text-sm text-ui-text-muted", "Load one item from the API." }
-                    div {
-                        class: "flex flex-col sm:flex-row gap-3 sm:items-end",
-                        label {
-                            class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
-                            span { "Item ID" }
-                            input {
-                                class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
-                                r#type: "text",
-                                inputmode: "numeric",
-                                placeholder: "e.g. 1",
-                                value: "{lookup_id}",
-                                oninput: move |e| *lookup_id.write() = e.value(),
-                            }
-                        }
-                        button {
-                            class: "shrink-0 rounded-lg bg-ui-secondary text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50",
-                            disabled: lookup_busy(),
-                            onclick: move |_| {
-                                let base = api_base();
-                                let raw = lookup_id().trim().to_string();
-                                spawn_lookup(
-                                    base,
-                                    raw,
-                                    lookup_busy,
-                                    looked_up,
-                                    recent,
-                                );
-                            },
-                            if lookup_busy() { "Loading…" } else { "Load" }
-                        }
-                    }
-                    if let Some(res) = looked_up() {
-                        match res {
-                            Ok(item) => rsx! { ItemCard { item } },
-                            Err(e) => rsx! {
-                                p { class: "text-sm text-ui-error", "{e}" }
-                            },
-                        }
+                if let Some(res) = looked_up() {
+                    match res {
+                        Ok(item) => rsx! { ItemCard { item } },
+                        Err(e) => rsx! {
+                            p { class: "text-sm text-ui-error", "{e}" }
+                        },
                     }
                 }
             }
 
             if !recent().is_empty() {
                 section {
-                    class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-3",
+                    class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-3 max-w-2xl",
                     div {
                         class: "flex items-center justify-between gap-4",
                         h2 { class: "text-lg font-medium text-ui-text", "Recent in this browser" }
@@ -279,7 +150,7 @@ pub fn Dashboard() -> Element {
             }
 
             section {
-                class: "rounded-xl border border-dashed border-ui-bg-dim bg-ui-bg-dim/30 p-5 space-y-4",
+                class: "rounded-xl border border-dashed border-ui-bg-dim bg-ui-bg-dim/30 p-5 space-y-4 max-w-2xl",
                 h2 { class: "text-lg font-medium text-ui-text", "Delete item" }
                 p { class: "text-sm text-ui-text-muted",
                     "Soft delete on the server. Items with active children return 409."

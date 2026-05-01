@@ -111,19 +111,8 @@ impl PostgresItemQuery {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-}
 
-#[async_trait]
-impl ItemQueryPort for PostgresItemQuery {
-    async fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
-        let row =
-            sqlx::query("SELECT id, name, parent_id, created, deleted FROM items WHERE id = $1")
-                .bind(i64::from(id))
-                .fetch_optional(&self.pool)
-                .await
-                .ok()
-                .flatten()?;
-
+    fn entity_from_row(row: &sqlx::postgres::PgRow) -> Option<Entity> {
         let id: i64 = row.try_get("id").ok()?;
         let name: String = row.try_get("name").ok()?;
         let parent_id: Option<i64> = row.try_get("parent_id").ok()?;
@@ -141,6 +130,34 @@ impl ItemQueryPort for PostgresItemQuery {
             EntityTimestamp::from(created),
             deleted.map(EntityTimestamp::from),
         ))
+    }
+}
+
+#[async_trait]
+impl ItemQueryPort for PostgresItemQuery {
+    async fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
+        let row =
+            sqlx::query("SELECT id, name, parent_id, created, deleted FROM items WHERE id = $1")
+                .bind(i64::from(id))
+                .fetch_optional(&self.pool)
+                .await
+                .ok()
+                .flatten()?;
+
+        Self::entity_from_row(&row)
+    }
+
+    async fn list_active_items(&self) -> Vec<Entity> {
+        let rows = sqlx::query(
+            "SELECT id, name, parent_id, created, deleted FROM items WHERE deleted IS NULL ORDER BY LOWER(name) ASC",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+
+        rows.iter()
+            .filter_map(|row| Self::entity_from_row(row))
+            .collect()
     }
 }
 

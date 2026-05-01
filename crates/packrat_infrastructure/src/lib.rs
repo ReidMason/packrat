@@ -43,6 +43,10 @@ impl ItemQueryPort for StubItemQuery {
             None
         }
     }
+
+    async fn list_active_items(&self) -> Vec<Entity> {
+        vec![stub_item(EntityId::from(1))]
+    }
 }
 
 pub struct StubItemCommand {

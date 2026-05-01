@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use ui::TailwindConfig;
-use views::{DebugPage, Home};
+use views::{DebugPage, Home, NewItem};
+use views::recent_store;
 
 mod api_base;
 mod api_client;
@@ -12,6 +13,8 @@ enum Route {
     #[layout(AppShell)]
     #[route("/")]
     Home {},
+    #[route("/items/new")]
+    NewItem {},
     #[route("/debug")]
     DebugPage {},
 }
@@ -36,7 +39,9 @@ fn App() -> Element {
 #[component]
 fn AppShell() -> Element {
     let api_base = use_signal(crate::api_base::initial_api_base);
+    let recent = use_signal(|| recent_store::load_recent_disk());
     use_context_provider(|| api_base);
+    use_context_provider(|| recent);
 
     rsx! {
         div {
@@ -60,6 +65,11 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
+                        to: Route::NewItem {},
+                        "New item"
+                    }
+                    Link {
+                        class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
                         to: Route::DebugPage {},
                         "Debug"
                     }
@@ -68,11 +78,16 @@ fn AppShell() -> Element {
             div {
                 class: "flex-1 flex flex-col min-w-0",
                 header {
-                    class: "sm:hidden border-b border-ui-bg-dim bg-ui-bg-dim/80 px-4 py-3 flex gap-4",
+                    class: "sm:hidden border-b border-ui-bg-dim bg-ui-bg-dim/80 px-4 py-3 flex flex-wrap gap-3",
                     Link {
                         class: "text-sm font-medium text-ui-primary",
                         to: Route::Home {},
                         "Dashboard"
+                    }
+                    Link {
+                        class: "text-sm font-medium text-ui-text-muted",
+                        to: Route::NewItem {},
+                        "New item"
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",

@@ -1,11 +1,22 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use packrat_application::{ItemCommandPort, create_item, get_item};
+use packrat_application::{ItemCommandPort, create_item, get_item, list_items};
 use packrat_domain::entity::{EntityId, EntityName};
 
 use crate::dto::{CreateItemDto, ErrorBody, ItemDto, SuccessBody};
 use crate::state::AppState;
+
+pub async fn list_items_handler(
+    State(state): State<AppState>,
+) -> Json<SuccessBody<Vec<ItemDto>>> {
+    let entities = list_items(state.query.as_ref()).await;
+    let dtos: Vec<ItemDto> = entities
+        .into_iter()
+        .map(ItemDto::from_entity)
+        .collect();
+    Json(SuccessBody::new(dtos))
+}
 
 pub async fn create_item_handler(
     State(state): State<AppState>,

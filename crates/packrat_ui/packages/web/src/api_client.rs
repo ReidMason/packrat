@@ -95,6 +95,20 @@ pub async fn fetch_api_status(base: &str) -> (Result<HealthDto, String>, Result<
     (h, r)
 }
 
+pub async fn list_items(base: &str) -> Result<Vec<ItemDto>, String> {
+    let url = format!("{}/api/items", normalize_base(base));
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let body: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(body.data)
+}
+
 pub async fn get_item(base: &str, id: i64) -> Result<ItemDto, String> {
     let url = format!("{}/api/items/{id}", normalize_base(base));
     let resp = reqwest::Client::new()
