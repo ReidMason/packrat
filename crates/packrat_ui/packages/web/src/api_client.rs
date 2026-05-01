@@ -1,6 +1,8 @@
 //! HTTP client for the Packrat Axum API (`/api/*`).
 use serde::{Deserialize, Serialize};
 
+use super::api_base::DEFAULT_API_BASE;
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct SuccessBody<T> {
     pub data: T,
@@ -44,7 +46,11 @@ struct CreateItemRequest {
 }
 
 fn normalize_base(base: &str) -> String {
-    base.trim().trim_end_matches('/').to_string()
+    let t = base.trim().trim_end_matches('/');
+    if t.is_empty() {
+        return DEFAULT_API_BASE.trim().trim_end_matches('/').to_string();
+    }
+    t.to_string()
 }
 
 async fn map_api_error(resp: reqwest::Response) -> String {
@@ -95,6 +101,37 @@ pub async fn fetch_api_status(base: &str) -> (Result<HealthDto, String>, Result<
     (h, r)
 }
 
+#[derive(Debug, Serialize)]
+struct SearchItemsRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fuzzyname: Option<String>,
+}
+
+pub async fn search_items(base: &str, fuzzyname: &str) -> Result<Vec<ItemDto>, String> {
+    let needle = fuzzyname.trim();
+    if needle.is_empty() {
+        return Err("Search text must not be empty.".into());
+    }
+    let url = format!("{}/api/items/search", normalize_base(base));
+    let body = SearchItemsRequest {
+        name: None,
+        fuzzyname: Some(needle.to_string()),
+    };
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let wrapped: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(wrapped.data)
+}
+
 pub async fn list_items(base: &str) -> Result<Vec<ItemDto>, String> {
     let url = format!("{}/api/items", normalize_base(base));
     let resp = reqwest::Client::new()
@@ -106,20 +143,6 @@ pub async fn list_items(base: &str) -> Result<Vec<ItemDto>, String> {
         return Err(map_api_error(resp).await);
     }
     let body: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
-    Ok(body.data)
-}
-
-pub async fn get_item(base: &str, id: i64) -> Result<ItemDto, String> {
-    let url = format!("{}/api/items/{id}", normalize_base(base));
-    let resp = reqwest::Client::new()
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-    if !resp.status().is_success() {
-        return Err(map_api_error(resp).await);
-    }
-    let body: SuccessBody<ItemDto> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.data)
 }
 
