@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use ui::TailwindConfig;
-use views::{DebugPage, Home, NewItem};
+use views::{DebugPage, Home, ItemDetail, NewItem};
 use views::recent_store;
 
 mod api_base;
@@ -15,6 +15,8 @@ enum Route {
     Home {},
     #[route("/items/new")]
     NewItem {},
+    #[route("/items/:id")]
+    ItemDetail { id: i64 },
     #[route("/debug")]
     DebugPage {},
 }

@@ -59,7 +59,7 @@ pub fn Dashboard() -> Element {
                 class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4 max-w-2xl",
                 h2 { class: "text-lg font-medium text-ui-text", "Search items" }
                 p { class: "text-sm text-ui-text-muted",
-                    "Case-insensitive partial match on the item name."
+                    "Case-insensitive partial match on the item name. Click a result to open its page."
                 }
                 div {
                     class: "flex flex-col sm:flex-row gap-3 sm:items-end",
@@ -99,8 +99,10 @@ pub fn Dashboard() -> Element {
                         Ok(items) => rsx! {
                             div { class: "space-y-3",
                                 for it in items {
-                                    div {
+                                    Link {
                                         key: "{it.id}",
+                                        class: "block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary",
+                                        to: Route::ItemDetail { id: it.id },
                                         ItemCard { item: it }
                                     }
                                 }
@@ -138,20 +140,9 @@ pub fn Dashboard() -> Element {
                                     class: "min-w-0",
                                     p { class: "text-sm font-medium text-ui-text truncate", "{entry.name}" }
                                 }
-                                button {
+                                Link {
                                     class: "shrink-0 rounded-lg border border-ui-bg-dim px-3 py-1.5 text-xs font-medium text-ui-text hover:bg-ui-bg-dim",
-                                    onclick: {
-                                        let name = entry.name.clone();
-                                        move |_| {
-                                            spawn_search(
-                                                api_base(),
-                                                name.clone(),
-                                                search_busy,
-                                                search_results,
-                                                recent,
-                                            );
-                                        }
-                                    },
+                                    to: Route::ItemDetail { id: entry.id },
                                     "Open"
                                 }
                             }
@@ -172,7 +163,7 @@ fn ItemCard(item: ItemDto) -> Element {
     };
     rsx! {
         div {
-            class: "rounded-lg border border-ui-bg-dim bg-ui-bg-dim/40 p-4 space-y-2 text-sm",
+            class: "rounded-lg border border-ui-bg-dim bg-ui-bg-dim/40 p-4 space-y-2 text-sm cursor-pointer hover:opacity-95 transition-opacity",
             p { class: "text-base font-medium text-ui-text", "{item.name}" }
             dl {
                 class: "grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ui-text-muted text-xs",

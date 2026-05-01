@@ -50,3 +50,10 @@ pub fn remember_recent(mut recent: Signal<Vec<RecentBrief>>, id: i64, name: Stri
     save_recent_disk(&v);
     recent.set(v);
 }
+
+pub fn remove_recent(mut recent: Signal<Vec<RecentBrief>>, id: i64) {
+    let mut v = recent();
+    v.retain(|e| e.id != id);
+    save_recent_disk(&v);
+    recent.set(v);
+}
