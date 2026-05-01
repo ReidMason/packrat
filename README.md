@@ -3,7 +3,7 @@
 - A tree will need to be generated somehow - Entities only know their direct parent
     - Home > Garage > Toolbox > Spanner
         - NOTE: lookup parent_id until it returns None
-- A tree that shows all the children of that tree
+- A tree that shows all the children of that tree / node connector like obsidian
 - Would be nice to include additional information to an entity
     - Such as warranty expiry (get a nofity when its close to expiring?)
 
