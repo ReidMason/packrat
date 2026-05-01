@@ -160,6 +160,20 @@ pub async fn get_item(base: &str, id: i64) -> Result<ItemDto, String> {
     Ok(body.data)
 }
 
+pub async fn list_child_items(base: &str, parent_id: i64) -> Result<Vec<ItemDto>, String> {
+    let url = format!("{}/api/items/{parent_id}/children", normalize_base(base));
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let body: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(body.data)
+}
+
 pub async fn create_item(base: &str, name: String, parent_id: Option<i64>) -> Result<ItemDto, String> {
     let url = format!("{}/api/items", normalize_base(base));
     let body = CreateItemRequest { name, parent_id };

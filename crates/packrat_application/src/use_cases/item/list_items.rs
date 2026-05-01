@@ -32,6 +32,13 @@ mod tests {
         ) -> Vec<Entity> {
             Vec::new()
         }
+
+        async fn list_child_items(
+            &self,
+            _parent_id: packrat_domain::entity::EntityId,
+        ) -> Vec<Entity> {
+            Vec::new()
+        }
     }
 
     fn entity(id: i64, name: &str) -> Entity {

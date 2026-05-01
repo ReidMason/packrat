@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-packrat-api",
     "name": "Packrat API",
-    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **GET /api/items** — list active (non-deleted) items.\n- **POST /api/items/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).",
+    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **GET /api/items** — list active (non-deleted) items.\n- **POST /api/items/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/items/:id/children** — active rows whose `parent_id` is that id.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -95,6 +95,16 @@
             "header": [],
             "url": "{{base_url}}/api/items/1",
             "description": "Returns 404 if the item does not exist. Change the `1` in the path to another id as needed."
+          },
+          "response": []
+        },
+        {
+          "name": "List child items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/items/1/children",
+            "description": "Returns `{ \"data\": [ ItemDto, ... ] }` for active items with `parent_id` equal to the path id (ordered by name). Empty array if none. Change `1` in the path as needed."
           },
           "response": []
         },

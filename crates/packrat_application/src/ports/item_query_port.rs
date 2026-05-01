@@ -12,4 +12,7 @@ pub trait ItemQueryPort: Send + Sync {
 
     /// Active items matching all supplied filters (`name` exact, `fuzzyname` substring).
     async fn search_items(&self, query: &ItemSearchQuery) -> Vec<Entity>;
+
+    /// Active items whose `parent_id` is `parent_id`.
+    async fn list_child_items(&self, parent_id: EntityId) -> Vec<Entity>;
 }

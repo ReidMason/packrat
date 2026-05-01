@@ -5,8 +5,8 @@ use tower_http::trace::TraceLayer;
 
 use crate::handlers::health::health_handler;
 use crate::handlers::items::{
-    create_item_handler, delete_item_handler, get_item_handler, list_items_handler,
-    search_items_handler,
+    create_item_handler, delete_item_handler, get_item_handler, list_child_items_handler,
+    list_items_handler, search_items_handler,
 };
 use crate::handlers::ready::ready_handler;
 use crate::state::AppState;
@@ -17,6 +17,7 @@ fn api_router(state: AppState) -> Router {
         .route("/ready", get(ready_handler))
         .route("/items/search", post(search_items_handler))
         .route("/items", get(list_items_handler).post(create_item_handler))
+        .route("/items/{id}/children", get(list_child_items_handler))
         .route("/items/{id}", get(get_item_handler).delete(delete_item_handler))
         .with_state(state)
 }

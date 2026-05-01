@@ -1,11 +1,24 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use packrat_application::{create_item, get_item, list_items, search_items, ItemCommandPort, ItemSearchQuery};
+use packrat_application::{
+    create_item, get_item, list_child_items, list_items, search_items, ItemCommandPort,
+    ItemSearchQuery,
+};
 use packrat_domain::entity::{EntityId, EntityName};
 
 use crate::dto::{CreateItemDto, ErrorBody, ItemDto, SearchItemsDto, SuccessBody};
 use crate::state::AppState;
+
+pub async fn list_child_items_handler(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Json<SuccessBody<Vec<ItemDto>>> {
+    let entities = list_child_items(state.query.as_ref(), EntityId::from(id)).await;
+    Json(SuccessBody::new(
+        entities.into_iter().map(ItemDto::from_entity).collect(),
+    ))
+}
 
 pub async fn search_items_handler(
     State(state): State<AppState>,

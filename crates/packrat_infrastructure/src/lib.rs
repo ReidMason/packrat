@@ -76,6 +76,14 @@ impl ItemQueryPort for StubItemQuery {
             })
             .collect()
     }
+
+    async fn list_child_items(&self, parent_id: EntityId) -> Vec<Entity> {
+        self.list_active_items()
+            .await
+            .into_iter()
+            .filter(|e| e.parent == Some(parent_id) && e.id != parent_id)
+            .collect()
+    }
 }
 
 pub struct StubItemCommand {

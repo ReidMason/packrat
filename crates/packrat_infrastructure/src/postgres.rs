@@ -191,6 +191,20 @@ impl ItemQueryPort for PostgresItemQuery {
             .filter_map(|row| Self::entity_from_row(row))
             .collect()
     }
+
+    async fn list_child_items(&self, parent_id: EntityId) -> Vec<Entity> {
+        let rows = sqlx::query(
+            "SELECT id, name, parent_id, created, deleted FROM items WHERE deleted IS NULL AND parent_id = $1 ORDER BY LOWER(name) ASC",
+        )
+        .bind(i64::from(parent_id))
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+
+        rows.iter()
+            .filter_map(|row| Self::entity_from_row(row))
+            .collect()
+    }
 }
 
 pub async fn connect_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {

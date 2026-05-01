@@ -57,6 +57,17 @@ mod tests {
                 .cloned()
                 .collect()
         }
+
+        async fn list_child_items(
+            &self,
+            parent_id: packrat_domain::entity::EntityId,
+        ) -> Vec<Entity> {
+            self.0
+                .iter()
+                .filter(|e| e.parent == Some(parent_id))
+                .cloned()
+                .collect()
+        }
     }
 
     fn entity(id: i64, name: &str) -> Entity {

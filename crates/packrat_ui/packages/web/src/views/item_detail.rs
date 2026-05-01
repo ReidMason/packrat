@@ -1,24 +1,34 @@
 use dioxus::prelude::*;
 
 use crate::Route;
-use crate::api_client;
+use crate::api_client::{self, ItemDto};
 use super::recent_store::{self, RecentBrief};
 
+/// Item detail is driven by the URL, not only the `id` prop from the router outlet: the outlet can
+/// reuse the same component slot when only `/items/:id` changes, so we read [`Route`] from the
+/// router (subscribes to history) for [`use_resource`] and for this scope’s render subscription.
 #[component]
+#[allow(unused_variables)] // `id` comes from the router; we read the active segment from history.
 pub fn ItemDetail(id: i64) -> Element {
+    let _ = use_route::<Route>();
+
     let api_base = use_context::<Signal<String>>();
     let recent = use_context::<Signal<Vec<RecentBrief>>>();
     let navigator = use_navigator();
 
-    let mut load_id = use_signal(|| id);
-    use_effect(move || {
-        *load_id.write() = id;
-    });
-
-    let item_res = use_resource(move || {
-        let item_id = load_id();
-        let base = api_base();
-        async move { api_client::get_item(&base, item_id).await }
+    let detail_res = use_resource(move || {
+        let api_base_sig = api_base;
+        async move {
+            let router = try_router().ok_or_else(|| "router unavailable".to_string())?;
+            let item_id = match router.current::<Route>() {
+                Route::ItemDetail { id } => id,
+                _ => return Err("unexpected route".into()),
+            };
+            let base = api_base_sig();
+            let item = api_client::get_item(&base, item_id).await?;
+            let children = api_client::list_child_items(&base, item_id).await?;
+            Ok::<(ItemDto, Vec<ItemDto>), String>((item, children))
+        }
     });
 
     let mut delete_confirm = use_signal(|| false);
@@ -35,7 +45,7 @@ pub fn ItemDetail(id: i64) -> Element {
                 "← Dashboard"
             }
 
-            match item_res() {
+            match detail_res() {
                 None => rsx! {
                     p { class: "text-sm text-ui-text-muted", "Loading…" }
                 },
@@ -49,7 +59,7 @@ pub fn ItemDetail(id: i64) -> Element {
                         }
                     }
                 },
-                Some(Ok(item)) => {
+                Some(Ok((item, children))) => {
                     let item_id = item.id;
                     let name = item.name.clone();
                     let parent_note = if item.parent_id.is_some() {
@@ -75,6 +85,32 @@ pub fn ItemDetail(id: i64) -> Element {
                                 if deleted {
                                     dt { "Status" }
                                     dd { "Removed" }
+                                }
+                            }
+
+                            div {
+                                class: "pt-4 border-t border-ui-bg-dim",
+                                h2 {
+                                    class: "text-sm font-semibold text-ui-text mb-3",
+                                    "Nested items"
+                                }
+                                if children.is_empty() {
+                                    p { class: "text-sm text-ui-text-muted", "None — nothing is filed under this item yet." }
+                                } else {
+                                    ul {
+                                        class: "divide-y divide-ui-bg-dim rounded-lg border border-ui-bg-dim bg-ui-bg-dim/30",
+                                        for child in children {
+                                            li {
+                                                key: "{child.id}",
+                                                class: "flex items-center justify-between gap-3 px-4 py-3 first:rounded-t-lg last:rounded-b-lg",
+                                                Link {
+                                                    class: "min-w-0 flex-1 text-sm font-medium text-ui-primary hover:underline truncate",
+                                                    to: Route::ItemDetail { id: child.id },
+                                                    "{child.name}"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
