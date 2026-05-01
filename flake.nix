@@ -124,6 +124,7 @@
         trunk
         cargo-tarpaulin
         sqlx-cli
+        lsof
       ];
 
       buildInputs =

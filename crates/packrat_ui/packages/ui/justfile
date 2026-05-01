@@ -1,10 +1,55 @@
-# One-shot: emit utilities used in `input.css` @source paths (desktop/mobile/web `.rs`).
+default:
+  @just --list
+
+[group('tailwind')]
+tailwind-watch:
+  #!/usr/bin/env bash
+  tailwindcss -i input.css -o ./assets/tailwind.css --watch
+
+[group('tailwind')]
 tailwind-build:
-  npm run build
+  #!/usr/bin/env bash
+  tailwindcss -i input.css -o ./assets/tailwind.css
 
-tailwind:
-  npm run watch
-
-tailwind-win:
+[group('tailwind')]
+tailwind-watch-win:
   #!powershell.exe
-  npm run watch
+  .\tailwindcss-windows-x64.exe -i input.css -o ./assets/tailwind.css --watch
+
+[group('tailwind')]
+tailwind-build-win:
+  #!powershell.exe
+  .\tailwindcss-windows-x64.exe -i input.css -o ./assets/tailwind.css
+
+_with-tailwind cmd:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    just tailwind-build
+    
+    echo "Starting Tailwind watcher..."
+    just tailwind-watch &
+    TW_PID=$!
+    
+    cleanup() {
+        echo "Stopping Tailwind watcher..."
+        kill $TW_PID 2>/dev/null || true
+    }
+    trap cleanup EXIT INT TERM
+    
+    {{cmd}}
+
+# Serve desktop package with Tailwind watcher
+[group('dx-serve')]
+serve-web:
+    @just _with-tailwind "dx serve --package web"
+
+# Serve desktop package with Tailwind watcher
+[group('dx-serve')]
+serve-desktop:
+    @just _with-tailwind "dx serve --package desktop"
+
+# Serve Android package with Tailwind watcher
+[group('dx-serve')]
+serve-android:
+    @just _with-tailwind "dx serve --package mobile --platform android"
