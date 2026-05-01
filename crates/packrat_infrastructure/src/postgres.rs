@@ -241,11 +241,13 @@ mod postgres_tests {
         let result = command.update_entity(item.id, changes).await;
         assert!(result.is_ok());
 
-        let row = sqlx::query!("SELECT name FROM items WHERE id = $1", i64::from(item.id))
+        let row = sqlx::query("SELECT name FROM items WHERE id = $1")
+            .bind(i64::from(item.id))
             .fetch_one(&pool)
             .await
             .unwrap();
+        let name: String = row.try_get("name").unwrap();
 
-        assert_eq!(row.name, "New Name");
+        assert_eq!(name, "New Name");
     }
 }
