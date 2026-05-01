@@ -9,7 +9,7 @@ use serde::Serialize;
 
 /// Successful response: `{ "data": ... }`.
 ///
-/// `T` is usually a DTO from [`crate::dto::items`] or another resource module.
+/// `T` is usually a DTO from [`crate::dto::assets`] or another resource module.
 #[derive(Serialize)]
 #[serde(bound = "T: Serialize")]
 pub struct SuccessBody<T> {

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO items (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
+  "query": "INSERT INTO assets (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -21,5 +21,5 @@
       false
     ]
   },
-  "hash": "6220ca1c0524a5937c0f8f23310c18abd801f3d79dce68a64b7ae40e8eb62dff"
+  "hash": "ec5ba834a0e9f7175f7988ea110ea7a42a5d270dc04000cb2898b762833363d5"
 }

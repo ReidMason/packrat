@@ -1,15 +1,15 @@
 use dioxus::prelude::*;
 
 use crate::Route;
-use crate::api_client::{self, ItemDto};
+use crate::api_client::{self, AssetDto};
 use super::recent_store::{self, RecentBrief};
 
-/// Item detail is driven by the URL, not only the `id` prop from the router outlet: the outlet can
-/// reuse the same component slot when only `/items/:id` changes, so we read [`Route`] from the
+/// Asset detail is driven by the URL, not only the `id` prop from the router outlet: the outlet can
+/// reuse the same component slot when only `/assets/:id` changes, so we read [`Route`] from the
 /// router (subscribes to history) for [`use_resource`] and for this scope’s render subscription.
 #[component]
 #[allow(unused_variables)] // `id` comes from the router; we read the active segment from history.
-pub fn ItemDetail(id: i64) -> Element {
+pub fn AssetDetail(id: i64) -> Element {
     let _ = use_route::<Route>();
 
     let api_base = use_context::<Signal<String>>();
@@ -20,14 +20,14 @@ pub fn ItemDetail(id: i64) -> Element {
         let api_base_sig = api_base;
         async move {
             let router = try_router().ok_or_else(|| "router unavailable".to_string())?;
-            let item_id = match router.current::<Route>() {
-                Route::ItemDetail { id } => id,
+            let asset_id = match router.current::<Route>() {
+                Route::AssetDetail { id } => id,
                 _ => return Err("unexpected route".into()),
             };
             let base = api_base_sig();
-            let item = api_client::get_item(&base, item_id).await?;
-            let children = api_client::list_child_items(&base, item_id).await?;
-            Ok::<(ItemDto, Vec<ItemDto>), String>((item, children))
+            let asset = api_client::get_asset(&base, asset_id).await?;
+            let children = api_client::list_child_assets(&base, asset_id).await?;
+            Ok::<(AssetDto, Vec<AssetDto>), String>((asset, children))
         }
     });
 
@@ -59,16 +59,16 @@ pub fn ItemDetail(id: i64) -> Element {
                         }
                     }
                 },
-                Some(Ok((item, children))) => {
-                    let item_id = item.id;
-                    let name = item.name.clone();
-                    let parent_note = if item.parent_id.is_some() {
-                        "Nested under another item"
+                Some(Ok((asset, children))) => {
+                    let asset_id = asset.id;
+                    let name = asset.name.clone();
+                    let parent_note = if asset.parent_id.is_some() {
+                        "Nested under another asset"
                     } else {
                         "Top level"
                     };
-                    let created = item.created.clone();
-                    let deleted = item.deleted.is_some();
+                    let created = asset.created.clone();
+                    let deleted = asset.deleted.is_some();
                     rsx! {
                         section {
                             class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 space-y-5",
@@ -92,10 +92,10 @@ pub fn ItemDetail(id: i64) -> Element {
                                 class: "pt-4 border-t border-ui-bg-dim",
                                 h2 {
                                     class: "text-sm font-semibold text-ui-text mb-3",
-                                    "Nested items"
+                                    "Nested assets"
                                 }
                                 if children.is_empty() {
-                                    p { class: "text-sm text-ui-text-muted", "None — nothing is filed under this item yet." }
+                                    p { class: "text-sm text-ui-text-muted", "None — nothing is filed under this asset yet." }
                                 } else {
                                     ul {
                                         class: "divide-y divide-ui-bg-dim rounded-lg border border-ui-bg-dim bg-ui-bg-dim/30",
@@ -105,7 +105,7 @@ pub fn ItemDetail(id: i64) -> Element {
                                                 class: "flex items-center justify-between gap-3 px-4 py-3 first:rounded-t-lg last:rounded-b-lg",
                                                 Link {
                                                     class: "min-w-0 flex-1 text-sm font-medium text-ui-primary hover:underline truncate",
-                                                    to: Route::ItemDetail { id: child.id },
+                                                    to: Route::AssetDetail { id: child.id },
                                                     "{child.name}"
                                                 }
                                             }
@@ -142,9 +142,9 @@ pub fn ItemDetail(id: i64) -> Element {
                                                 delete_busy.set(true);
                                                 delete_msg.set(None);
                                                 spawn(async move {
-                                                    match api_client::delete_item(&base, item_id).await {
+                                                    match api_client::delete_asset(&base, asset_id).await {
                                                         Ok(()) => {
-                                                            recent_store::remove_recent(rec, item_id);
+                                                            recent_store::remove_recent(rec, asset_id);
                                                             nav.push(Route::Home {});
                                                         }
                                                         Err(err) => delete_msg.set(Some(err)),
@@ -162,7 +162,7 @@ pub fn ItemDetail(id: i64) -> Element {
                                             delete_confirm.set(true);
                                             delete_msg.set(None);
                                         },
-                                        "Delete item"
+                                        "Delete asset"
                                     }
                                 }
 

@@ -2,28 +2,28 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use packrat_application::{
-    create_item, get_item, list_child_items, list_items, search_items, ItemCommandPort,
-    ItemSearchQuery,
+    create_asset, get_asset, list_child_assets, list_assets, search_assets, AssetCommandPort,
+    AssetSearchQuery,
 };
 use packrat_domain::entity::{EntityId, EntityName};
 
-use crate::dto::{CreateItemDto, ErrorBody, ItemDto, SearchItemsDto, SuccessBody};
+use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
 use crate::state::AppState;
 
-pub async fn list_child_items_handler(
+pub async fn list_child_assets_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Json<SuccessBody<Vec<ItemDto>>> {
-    let entities = list_child_items(state.query.as_ref(), EntityId::from(id)).await;
+) -> Json<SuccessBody<Vec<AssetDto>>> {
+    let entities = list_child_assets(state.query.as_ref(), EntityId::from(id)).await;
     Json(SuccessBody::new(
-        entities.into_iter().map(ItemDto::from_entity).collect(),
+        entities.into_iter().map(AssetDto::from_entity).collect(),
     ))
 }
 
-pub async fn search_items_handler(
+pub async fn search_assets_handler(
     State(state): State<AppState>,
-    Json(body): Json<SearchItemsDto>,
-) -> Result<Json<SuccessBody<Vec<ItemDto>>>, (StatusCode, Json<ErrorBody>)> {
+    Json(body): Json<SearchAssetsDto>,
+) -> Result<Json<SuccessBody<Vec<AssetDto>>>, (StatusCode, Json<ErrorBody>)> {
     let name = body
         .name
         .as_ref()
@@ -44,29 +44,29 @@ pub async fn search_items_handler(
             )),
         ));
     }
-    let query = ItemSearchQuery { name, fuzzyname };
-    let entities = search_items(state.query.as_ref(), &query).await;
+    let query = AssetSearchQuery { name, fuzzyname };
+    let entities = search_assets(state.query.as_ref(), &query).await;
     Ok(Json(SuccessBody::new(
-        entities.into_iter().map(ItemDto::from_entity).collect(),
+        entities.into_iter().map(AssetDto::from_entity).collect(),
     )))
 }
 
-pub async fn list_items_handler(
+pub async fn list_assets_handler(
     State(state): State<AppState>,
-) -> Json<SuccessBody<Vec<ItemDto>>> {
-    let entities = list_items(state.query.as_ref()).await;
-    let dtos: Vec<ItemDto> = entities
+) -> Json<SuccessBody<Vec<AssetDto>>> {
+    let entities = list_assets(state.query.as_ref()).await;
+    let dtos: Vec<AssetDto> = entities
         .into_iter()
-        .map(ItemDto::from_entity)
+        .map(AssetDto::from_entity)
         .collect();
     Json(SuccessBody::new(dtos))
 }
 
-pub async fn create_item_handler(
+pub async fn create_asset_handler(
     State(state): State<AppState>,
-    Json(body): Json<CreateItemDto>,
+    Json(body): Json<CreateAssetDto>,
 ) -> Result<
-    (StatusCode, Json<SuccessBody<ItemDto>>),
+    (StatusCode, Json<SuccessBody<AssetDto>>),
     (StatusCode, Json<ErrorBody>),
 > {
     if body.name.trim().is_empty() {
@@ -75,7 +75,7 @@ pub async fn create_item_handler(
             Json(ErrorBody::message("name must not be empty")),
         ));
     }
-    let entity = create_item(
+    let entity = create_asset(
         state.command.as_ref(),
         EntityName::from(body.name),
         body.parent_id.map(EntityId::from),
@@ -83,30 +83,30 @@ pub async fn create_item_handler(
     .await;
     Ok((
         StatusCode::CREATED,
-        Json(SuccessBody::new(ItemDto::from_entity(entity))),
+        Json(SuccessBody::new(AssetDto::from_entity(entity))),
     ))
 }
 
-pub async fn get_item_handler(
+pub async fn get_asset_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<SuccessBody<ItemDto>>, (StatusCode, Json<ErrorBody>)> {
-    match get_item(state.query.as_ref(), EntityId::from(id)).await {
-        Some(e) => Ok(Json(SuccessBody::new(ItemDto::from_entity(e)))),
+) -> Result<Json<SuccessBody<AssetDto>>, (StatusCode, Json<ErrorBody>)> {
+    match get_asset(state.query.as_ref(), EntityId::from(id)).await {
+        Some(e) => Ok(Json(SuccessBody::new(AssetDto::from_entity(e)))),
         None => Err((
             StatusCode::NOT_FOUND,
-            Json(ErrorBody::message("item not found")),
+            Json(ErrorBody::message("asset not found")),
         )),
     }
 }
 
-pub async fn delete_item_handler(
+pub async fn delete_asset_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorBody>)> {
     state
         .command
-        .delete_entity(EntityId::from(id))
+        .delete_asset(EntityId::from(id))
         .await
         .map(|_| StatusCode::NO_CONTENT)
         .map_err(|e| {

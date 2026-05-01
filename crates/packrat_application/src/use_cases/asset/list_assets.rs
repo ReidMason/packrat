@@ -1,9 +1,9 @@
 use packrat_domain::entity::Entity;
 
-use crate::ports::ItemQueryPort;
+use crate::ports::AssetQueryPort;
 
-pub async fn execute(port: &impl ItemQueryPort) -> Vec<Entity> {
-    port.list_active_items().await
+pub async fn execute(port: &impl AssetQueryPort) -> Vec<Entity> {
+    port.list_active_assets().await
 }
 
 #[cfg(test)]
@@ -12,28 +12,28 @@ mod tests {
     use packrat_domain::entity::{EntityName, EntityTimestamp};
 
     use super::*;
-    use crate::ports::ItemQueryPort;
+    use crate::ports::AssetQueryPort;
 
     struct MockPort(Vec<Entity>);
 
     #[async_trait]
-    impl ItemQueryPort for MockPort {
-        async fn get_item_by_id(&self, _id: packrat_domain::entity::EntityId) -> Option<Entity> {
+    impl AssetQueryPort for MockPort {
+        async fn get_asset_by_id(&self, _id: packrat_domain::entity::EntityId) -> Option<Entity> {
             None
         }
 
-        async fn list_active_items(&self) -> Vec<Entity> {
+        async fn list_active_assets(&self) -> Vec<Entity> {
             self.0.clone()
         }
 
-        async fn search_items(
+        async fn search_assets(
             &self,
-            _query: &crate::ports::ItemSearchQuery,
+            _query: &crate::ports::AssetSearchQuery,
         ) -> Vec<Entity> {
             Vec::new()
         }
 
-        async fn list_child_items(
+        async fn list_child_assets(
             &self,
             _parent_id: packrat_domain::entity::EntityId,
         ) -> Vec<Entity> {

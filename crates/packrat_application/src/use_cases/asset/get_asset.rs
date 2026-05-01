@@ -1,9 +1,9 @@
 use packrat_domain::entity::{Entity, EntityId};
 
-use crate::ports::ItemQueryPort;
+use crate::ports::AssetQueryPort;
 
-pub async fn execute(port: &impl ItemQueryPort, id: EntityId) -> Option<Entity> {
-    port.get_item_by_id(id).await
+pub async fn execute(port: &impl AssetQueryPort, id: EntityId) -> Option<Entity> {
+    port.get_asset_by_id(id).await
 }
 
 #[cfg(test)]
@@ -13,13 +13,13 @@ mod tests {
 
     use super::*;
 
-    struct MockItemQuery;
+    struct MockAssetQuery;
 
     fn test_timestamp() -> EntityTimestamp {
         EntityTimestamp::static_for_tests()
     }
 
-    fn stub_item(id: EntityId) -> Entity {
+    fn stub_entity(id: EntityId) -> Entity {
         Entity::new(
             id,
             EntityName::from("from infrastructure stub"),
@@ -30,21 +30,21 @@ mod tests {
     }
 
     #[async_trait]
-    impl ItemQueryPort for MockItemQuery {
-        async fn get_item_by_id(&self, id: EntityId) -> Option<Entity> {
+    impl AssetQueryPort for MockAssetQuery {
+        async fn get_asset_by_id(&self, id: EntityId) -> Option<Entity> {
             if id == EntityId::from(1) {
-                Some(stub_item(id))
+                Some(stub_entity(id))
             } else {
                 None
             }
         }
 
-        async fn list_active_items(&self) -> Vec<Entity> {
-            vec![stub_item(EntityId::from(1))]
+        async fn list_active_assets(&self) -> Vec<Entity> {
+            vec![stub_entity(EntityId::from(1))]
         }
 
-        async fn search_items(&self, query: &crate::ports::ItemSearchQuery) -> Vec<Entity> {
-            self.list_active_items()
+        async fn search_assets(&self, query: &crate::ports::AssetSearchQuery) -> Vec<Entity> {
+            self.list_active_assets()
                 .await
                 .into_iter()
                 .filter(|e| {
@@ -72,11 +72,8 @@ mod tests {
                 .collect()
         }
 
-        async fn list_child_items(
-            &self,
-            parent_id: EntityId,
-        ) -> Vec<Entity> {
-            self.list_active_items()
+        async fn list_child_assets(&self, parent_id: EntityId) -> Vec<Entity> {
+            self.list_active_assets()
                 .await
                 .into_iter()
                 .filter(|e| e.parent == Some(parent_id))
@@ -85,17 +82,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn execute_returns_item_when_present() {
-        let port = MockItemQuery;
+    async fn execute_returns_asset_when_present() {
+        let port = MockAssetQuery;
         assert_eq!(
             execute(&port, EntityId::from(1)).await,
-            Some(stub_item(EntityId::from(1)))
+            Some(stub_entity(EntityId::from(1)))
         );
     }
 
     #[tokio::test]
     async fn execute_returns_none_when_missing() {
-        let port = MockItemQuery;
+        let port = MockAssetQuery;
         assert_eq!(execute(&port, EntityId::from(999)).await, None);
     }
 }

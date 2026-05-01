@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use ui::TailwindConfig;
-use views::{DebugPage, Home, ItemDetail, NewItem};
+use views::{AssetDetail, DebugPage, Home, NewAsset};
 use views::recent_store;
 
 mod api_base;
@@ -13,10 +13,10 @@ enum Route {
     #[layout(AppShell)]
     #[route("/")]
     Home {},
-    #[route("/items/new")]
-    NewItem {},
-    #[route("/items/:id")]
-    ItemDetail { id: i64 },
+    #[route("/assets/new")]
+    NewAsset {},
+    #[route("/assets/:id")]
+    AssetDetail { id: i64 },
     #[route("/debug")]
     DebugPage {},
 }
@@ -67,8 +67,8 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
-                        to: Route::NewItem {},
-                        "New item"
+                        to: Route::NewAsset {},
+                        "New asset"
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
@@ -88,8 +88,8 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",
-                        to: Route::NewItem {},
-                        "New item"
+                        to: Route::NewAsset {},
+                        "New asset"
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",

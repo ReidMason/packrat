@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
-pub const RECENT_KEY: &str = "packrat_recent_v1";
+pub const RECENT_KEY: &str = "packrat_recent_assets_v1";
 pub const MAX_RECENT: usize = 10;
 
 #[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]

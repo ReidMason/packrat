@@ -1,14 +1,14 @@
 use dioxus::prelude::*;
 
 use crate::Route;
-use crate::api_client::{self, ItemDto};
+use crate::api_client::{self, AssetDto};
 use super::recent_store::{remember_recent, save_recent_disk, RecentBrief};
 
 fn spawn_search(
     base: String,
     query: String,
     mut search_busy: Signal<bool>,
-    mut search_results: Signal<Option<Result<Vec<ItemDto>, String>>>,
+    mut search_results: Signal<Option<Result<Vec<AssetDto>, String>>>,
     recent: Signal<Vec<RecentBrief>>,
 ) {
     search_busy.set(true);
@@ -16,11 +16,11 @@ fn spawn_search(
         let res = if query.trim().is_empty() {
             Err("Enter a search term.".into())
         } else {
-            api_client::search_items(&base, &query).await
+            api_client::search_assets(&base, &query).await
         };
         if let Ok(ref list) = res {
-            if let Some(item) = list.first() {
-                remember_recent(recent, item.id, item.name.clone());
+            if let Some(asset) = list.first() {
+                remember_recent(recent, asset.id, asset.name.clone());
             }
         }
         search_results.set(Some(res));
@@ -34,7 +34,7 @@ pub fn Dashboard() -> Element {
     let mut recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut search_term = use_signal(String::new);
-    let search_results = use_signal(|| Option::<Result<Vec<ItemDto>, String>>::None);
+    let search_results = use_signal(|| Option::<Result<Vec<AssetDto>, String>>::None);
     let search_busy = use_signal(|| false);
 
     rsx! {
@@ -45,21 +45,21 @@ pub fn Dashboard() -> Element {
                 class: "space-y-1",
                 h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "Dashboard" }
                 p { class: "text-sm text-ui-text-muted max-w-2xl leading-relaxed",
-                    "Search items by name. Recent opens stay in this browser only. ",
+                    "Search assets by name. Recent opens stay in this browser only. ",
                     "API URL and health checks are under Debug."
                 }
                 Link {
                     class: "inline-flex mt-4 rounded-lg bg-ui-primary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90",
-                    to: Route::NewItem {},
-                    "Add new item"
+                    to: Route::NewAsset {},
+                    "Add new asset"
                 }
             }
 
             section {
                 class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4 max-w-2xl",
-                h2 { class: "text-lg font-medium text-ui-text", "Search items" }
+                h2 { class: "text-lg font-medium text-ui-text", "Search assets" }
                 p { class: "text-sm text-ui-text-muted",
-                    "Case-insensitive partial match on the item name. Click a result to open its page."
+                    "Case-insensitive partial match on the asset name. Click a result to open its page."
                 }
                 div {
                     class: "flex flex-col sm:flex-row gap-3 sm:items-end",
@@ -101,17 +101,17 @@ pub fn Dashboard() -> Element {
                 }
                 if let Some(res) = search_results() {
                     match res {
-                        Ok(items) if items.is_empty() => rsx! {
+                        Ok(assets) if assets.is_empty() => rsx! {
                             p { class: "text-sm text-ui-text-muted", "No matches." }
                         },
-                        Ok(items) => rsx! {
+                        Ok(assets) => rsx! {
                             div { class: "space-y-3",
-                                for it in items {
+                                for it in assets {
                                     Link {
                                         key: "{it.id}",
                                         class: "block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary",
-                                        to: Route::ItemDetail { id: it.id },
-                                        ItemCard { item: it }
+                                        to: Route::AssetDetail { id: it.id },
+                                        AssetCard { asset: it }
                                     }
                                 }
                             }
@@ -150,7 +150,7 @@ pub fn Dashboard() -> Element {
                                 }
                                 Link {
                                     class: "shrink-0 rounded-lg border border-ui-bg-dim px-3 py-1.5 text-xs font-medium text-ui-text hover:bg-ui-bg-dim",
-                                    to: Route::ItemDetail { id: entry.id },
+                                    to: Route::AssetDetail { id: entry.id },
                                     "Open"
                                 }
                             }
@@ -163,23 +163,23 @@ pub fn Dashboard() -> Element {
 }
 
 #[component]
-fn ItemCard(item: ItemDto) -> Element {
-    let parent_note = if item.parent_id.is_some() {
-        "Nested under another item"
+fn AssetCard(asset: AssetDto) -> Element {
+    let parent_note = if asset.parent_id.is_some() {
+        "Nested under another asset"
     } else {
         "Top level"
     };
     rsx! {
         div {
             class: "rounded-lg border border-ui-bg-dim bg-ui-bg-dim/40 p-4 space-y-2 text-sm cursor-pointer hover:opacity-95 transition-opacity",
-            p { class: "text-base font-medium text-ui-text", "{item.name}" }
+            p { class: "text-base font-medium text-ui-text", "{asset.name}" }
             dl {
                 class: "grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ui-text-muted text-xs",
                 dt { "Placement" }
                 dd { "{parent_note}" }
                 dt { "Created" }
-                dd { class: "font-mono", "{item.created}" }
-                if item.deleted.is_some() {
+                dd { class: "font-mono", "{asset.created}" }
+                if asset.deleted.is_some() {
                     dt { "Status" }
                     dd { "Removed" }
                 }

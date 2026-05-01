@@ -1,7 +1,8 @@
 pub mod health;
-pub mod item;
+pub mod asset;
 
 pub use health::check_readiness;
-pub use item::{
-    create_item, delete_entity, get_item, list_child_items, list_items, search_items, update_entity,
+pub use asset::{
+    create_asset, delete_asset, get_asset, list_child_assets, list_assets, search_assets,
+    update_asset,
 };

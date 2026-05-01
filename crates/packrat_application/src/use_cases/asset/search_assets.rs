@@ -1,9 +1,9 @@
 use packrat_domain::entity::Entity;
 
-use crate::ports::{ItemQueryPort, ItemSearchQuery};
+use crate::ports::{AssetQueryPort, AssetSearchQuery};
 
-pub async fn execute(port: &impl ItemQueryPort, query: &ItemSearchQuery) -> Vec<Entity> {
-    port.search_items(query).await
+pub async fn execute(port: &impl AssetQueryPort, query: &AssetSearchQuery) -> Vec<Entity> {
+    port.search_assets(query).await
 }
 
 #[cfg(test)]
@@ -12,24 +12,24 @@ mod tests {
     use packrat_domain::entity::{EntityName, EntityTimestamp};
 
     use super::*;
-    use crate::ports::ItemQueryPort;
+    use crate::ports::AssetQueryPort;
 
     struct MockPort(Vec<Entity>);
 
     #[async_trait]
-    impl ItemQueryPort for MockPort {
-        async fn get_item_by_id(
+    impl AssetQueryPort for MockPort {
+        async fn get_asset_by_id(
             &self,
             _id: packrat_domain::entity::EntityId,
         ) -> Option<Entity> {
             None
         }
 
-        async fn list_active_items(&self) -> Vec<Entity> {
+        async fn list_active_assets(&self) -> Vec<Entity> {
             self.0.clone()
         }
 
-        async fn search_items(&self, query: &ItemSearchQuery) -> Vec<Entity> {
+        async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Entity> {
             self.0
                 .iter()
                 .filter(|e| {
@@ -58,7 +58,7 @@ mod tests {
                 .collect()
         }
 
-        async fn list_child_items(
+        async fn list_child_assets(
             &self,
             parent_id: packrat_domain::entity::EntityId,
         ) -> Vec<Entity> {
@@ -83,7 +83,7 @@ mod tests {
     #[tokio::test]
     async fn filters_by_exact_name() {
         let port = MockPort(vec![entity(1, "Alpha"), entity(2, "Beta")]);
-        let q = ItemSearchQuery {
+        let q = AssetSearchQuery {
             name: Some("Beta".into()),
             fuzzyname: None,
         };
@@ -93,7 +93,7 @@ mod tests {
     #[tokio::test]
     async fn filters_by_fuzzy_substring() {
         let port = MockPort(vec![entity(1, "Canon R5"), entity(2, "Nikon Z9")]);
-        let q = ItemSearchQuery {
+        let q = AssetSearchQuery {
             name: None,
             fuzzyname: Some("nik".into()),
         };
@@ -107,7 +107,7 @@ mod tests {
             entity(2, "Red Toolbox"),
             entity(3, "Red Bucket"),
         ]);
-        let q = ItemSearchQuery {
+        let q = AssetSearchQuery {
             name: Some("Red Toolbox".into()),
             fuzzyname: Some("tool".into()),
         };

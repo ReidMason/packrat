@@ -30,7 +30,7 @@ pub struct ReadyDto {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct ItemDto {
+pub struct AssetDto {
     pub id: i64,
     pub name: String,
     pub parent_id: Option<i64>,
@@ -39,7 +39,7 @@ pub struct ItemDto {
 }
 
 #[derive(Debug, Serialize)]
-struct CreateItemRequest {
+struct CreateAssetRequest {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     parent_id: Option<i64>,
@@ -102,20 +102,20 @@ pub async fn fetch_api_status(base: &str) -> (Result<HealthDto, String>, Result<
 }
 
 #[derive(Debug, Serialize)]
-struct SearchItemsRequest {
+struct SearchAssetsRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     fuzzyname: Option<String>,
 }
 
-pub async fn search_items(base: &str, fuzzyname: &str) -> Result<Vec<ItemDto>, String> {
+pub async fn search_assets(base: &str, fuzzyname: &str) -> Result<Vec<AssetDto>, String> {
     let needle = fuzzyname.trim();
     if needle.is_empty() {
         return Err("Search text must not be empty.".into());
     }
-    let url = format!("{}/api/items/search", normalize_base(base));
-    let body = SearchItemsRequest {
+    let url = format!("{}/api/assets/search", normalize_base(base));
+    let body = SearchAssetsRequest {
         name: None,
         fuzzyname: Some(needle.to_string()),
     };
@@ -128,12 +128,12 @@ pub async fn search_items(base: &str, fuzzyname: &str) -> Result<Vec<ItemDto>, S
     if !resp.status().is_success() {
         return Err(map_api_error(resp).await);
     }
-    let wrapped: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    let wrapped: SuccessBody<Vec<AssetDto>> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(wrapped.data)
 }
 
-pub async fn list_items(base: &str) -> Result<Vec<ItemDto>, String> {
-    let url = format!("{}/api/items", normalize_base(base));
+pub async fn list_assets(base: &str) -> Result<Vec<AssetDto>, String> {
+    let url = format!("{}/api/assets", normalize_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -142,12 +142,12 @@ pub async fn list_items(base: &str) -> Result<Vec<ItemDto>, String> {
     if !resp.status().is_success() {
         return Err(map_api_error(resp).await);
     }
-    let body: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    let body: SuccessBody<Vec<AssetDto>> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.data)
 }
 
-pub async fn get_item(base: &str, id: i64) -> Result<ItemDto, String> {
-    let url = format!("{}/api/items/{id}", normalize_base(base));
+pub async fn get_asset(base: &str, id: i64) -> Result<AssetDto, String> {
+    let url = format!("{}/api/assets/{id}", normalize_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -156,12 +156,12 @@ pub async fn get_item(base: &str, id: i64) -> Result<ItemDto, String> {
     if !resp.status().is_success() {
         return Err(map_api_error(resp).await);
     }
-    let body: SuccessBody<ItemDto> = resp.json().await.map_err(|e| e.to_string())?;
+    let body: SuccessBody<AssetDto> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.data)
 }
 
-pub async fn list_child_items(base: &str, parent_id: i64) -> Result<Vec<ItemDto>, String> {
-    let url = format!("{}/api/items/{parent_id}/children", normalize_base(base));
+pub async fn list_child_assets(base: &str, parent_id: i64) -> Result<Vec<AssetDto>, String> {
+    let url = format!("{}/api/assets/{parent_id}/children", normalize_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -170,13 +170,17 @@ pub async fn list_child_items(base: &str, parent_id: i64) -> Result<Vec<ItemDto>
     if !resp.status().is_success() {
         return Err(map_api_error(resp).await);
     }
-    let body: SuccessBody<Vec<ItemDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    let body: SuccessBody<Vec<AssetDto>> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.data)
 }
 
-pub async fn create_item(base: &str, name: String, parent_id: Option<i64>) -> Result<ItemDto, String> {
-    let url = format!("{}/api/items", normalize_base(base));
-    let body = CreateItemRequest { name, parent_id };
+pub async fn create_asset(
+    base: &str,
+    name: String,
+    parent_id: Option<i64>,
+) -> Result<AssetDto, String> {
+    let url = format!("{}/api/assets", normalize_base(base));
+    let body = CreateAssetRequest { name, parent_id };
     let resp = reqwest::Client::new()
         .post(&url)
         .json(&body)
@@ -186,12 +190,12 @@ pub async fn create_item(base: &str, name: String, parent_id: Option<i64>) -> Re
     if !resp.status().is_success() {
         return Err(map_api_error(resp).await);
     }
-    let wrapped: SuccessBody<ItemDto> = resp.json().await.map_err(|e| e.to_string())?;
+    let wrapped: SuccessBody<AssetDto> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(wrapped.data)
 }
 
-pub async fn delete_item(base: &str, id: i64) -> Result<(), String> {
-    let url = format!("{}/api/items/{id}", normalize_base(base));
+pub async fn delete_asset(base: &str, id: i64) -> Result<(), String> {
+    let url = format!("{}/api/assets/{id}", normalize_base(base));
     let resp = reqwest::Client::new()
         .delete(&url)
         .send()

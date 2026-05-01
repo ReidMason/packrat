@@ -5,7 +5,7 @@ use crate::api_client;
 use super::recent_store::{remember_recent, RecentBrief};
 
 #[component]
-pub fn NewItem() -> Element {
+pub fn NewAsset() -> Element {
     let api_base = use_context::<Signal<String>>();
     let recent = use_context::<Signal<Vec<RecentBrief>>>();
 
@@ -16,10 +16,10 @@ pub fn NewItem() -> Element {
     let mut busy = use_signal(|| false);
     let mut list_gen = use_signal(|| 0u32);
 
-    let items = use_resource(move || {
+    let assets = use_resource(move || {
         let _ = list_gen();
         let base = api_base();
-        async move { api_client::list_items(&base).await }
+        async move { api_client::list_assets(&base).await }
     });
 
     rsx! {
@@ -28,9 +28,9 @@ pub fn NewItem() -> Element {
 
             div {
                 class: "space-y-1",
-                h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "New item" }
+                h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "New asset" }
                 p { class: "text-sm text-ui-text-muted",
-                    "Name is required. Parent is optional — pick an existing item or leave this row at the top level."
+                    "Name is required. Parent is optional — pick an existing asset or leave this row at the top level."
                 }
             }
 
@@ -51,9 +51,9 @@ pub fn NewItem() -> Element {
                 div {
                     class: "flex flex-col gap-2 text-sm text-ui-text-muted",
                     span { "Parent" }
-                    match items() {
+                    match assets() {
                         None => rsx! {
-                            p { class: "text-sm text-ui-text-dim", "Loading items…" }
+                            p { class: "text-sm text-ui-text-dim", "Loading assets…" }
                         },
                         Some(Err(err)) => rsx! {
                             p { class: "text-sm text-ui-error", "{err}" }
@@ -102,10 +102,10 @@ pub fn NewItem() -> Element {
                             busy.set(true);
                             flash.set(None);
                             spawn(async move {
-                                match api_client::create_item(&base, n, parent_id).await {
-                                    Ok(item) => {
-                                        remember_recent(recent_sig, item.id, item.name.clone());
-                                        flash.set(Some(format!("Created “{}”.", item.name)));
+                                match api_client::create_asset(&base, n, parent_id).await {
+                                    Ok(asset) => {
+                                        remember_recent(recent_sig, asset.id, asset.name.clone());
+                                        flash.set(Some(format!("Created “{}”.", asset.name)));
                                         name.write().clear();
                                         parent_sel.write().clear();
                                         *list_gen.write() += 1;
@@ -115,7 +115,7 @@ pub fn NewItem() -> Element {
                                 busy.set(false);
                             });
                         },
-                        if busy() { "Saving…" } else { "Create item" }
+                        if busy() { "Saving…" } else { "Create asset" }
                     }
                     Link {
                         class: "rounded-lg border border-ui-bg-dim px-4 py-2.5 text-sm font-medium text-ui-text hover:bg-ui-bg-dim",
