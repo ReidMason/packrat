@@ -155,10 +155,18 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::migrate::MigrateE
     sqlx::migrate!("./migrations").run(pool).await
 }
 
+pub async fn ping_database(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(pool)
+        .await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod postgres_tests {
     use super::*;
     use packrat_domain::entity::EntityName;
+    use sqlx::Row;
 
     #[sqlx::test]
     async fn test_delete_entity_errors_when_is_parent(pool: PgPool) {
@@ -178,15 +186,14 @@ mod postgres_tests {
             "Cannot Delete: Entity has active children"
         );
 
-        let row = sqlx::query!(
-            "SELECT deleted FROM items WHERE id = $1",
-            i64::from(parent.id)
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+        let row = sqlx::query("SELECT deleted FROM items WHERE id = $1")
+            .bind(i64::from(parent.id))
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let deleted: Option<chrono::DateTime<chrono::Utc>> = row.try_get("deleted").unwrap();
 
-        assert!(row.deleted.is_none());
+        assert!(deleted.is_none());
     }
 
     #[sqlx::test]
@@ -209,15 +216,14 @@ mod postgres_tests {
 
         assert!(result.is_ok());
 
-        let row = sqlx::query!(
-            "SELECT deleted FROM items WHERE id = $1",
-            i64::from(item.id)
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+        let row = sqlx::query("SELECT deleted FROM items WHERE id = $1")
+            .bind(i64::from(item.id))
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let deleted: Option<chrono::DateTime<chrono::Utc>> = row.try_get("deleted").unwrap();
 
-        assert!(row.deleted.is_some());
+        assert!(deleted.is_some());
     }
 
     #[sqlx::test]

@@ -8,12 +8,13 @@ COPY .sqlx ./.sqlx
 COPY crates ./crates
 
 ENV SQLX_OFFLINE=true
-RUN cargo build --release -p packrat
+RUN cargo build --release -p packrat_api
 
 FROM scratch AS runtime
 
-COPY --from=builder /app/target/release/packrat /packrat
+COPY --from=builder /app/target/release/packrat_api /packrat_api
 # nobody user
 USER 65534:65534
 
-ENTRYPOINT ["/packrat"]
+ENV LISTEN_ADDR=0.0.0.0:3000
+ENTRYPOINT ["/packrat_api"]

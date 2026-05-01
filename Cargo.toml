@@ -3,7 +3,7 @@ members = [
     "crates/packrat_domain",
     "crates/packrat_application",
     "crates/packrat_infrastructure",
-    "crates/packrat",
+    "crates/packrat_api",
 ]
-default-members = ["crates/packrat"]
+default-members = ["crates/packrat_api"]
 resolver = "2"

@@ -1,6 +1,7 @@
 //! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
 mod postgres;
+mod readiness;
 
 use async_trait::async_trait;
 use std::{
@@ -11,7 +12,8 @@ use std::{
     },
 };
 
-pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, run_migrations};
+pub use postgres::{PostgresItemCommand, PostgresItemQuery, connect_pool, ping_database, run_migrations};
+pub use readiness::PostgresReadiness;
 
 use packrat_application::{ItemCommandPort, ItemQueryPort};
 use packrat_domain::{

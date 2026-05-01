@@ -9,6 +9,15 @@ test-core *args:
 test-ui *args:
     cargo test --manifest-path crates/packrat_ui/Cargo.toml --workspace {{args}}
 
+# HTTP API (Axum). Needs Postgres (e.g. `docker compose up -d postgres`).
+run-api:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export DATABASE_URL="${DATABASE_URL:-postgres://packrat:packrat@localhost:5432/packrat?sslmode=disable}"
+    export LISTEN_ADDR="${LISTEN_ADDR:-127.0.0.1:3000}"
+    export SQLX_OFFLINE="${SQLX_OFFLINE:-true}"
+    cargo run -p packrat_api
+
 coverage:
     #!/usr/bin/env bash
     export DATABASE_URL="${DATABASE_URL:-postgres://packrat:packrat@localhost:5432/packrat?sslmode=disable}"

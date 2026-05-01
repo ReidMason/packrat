@@ -10,14 +10,39 @@ permissions:
 jobs:
   tarpaulin:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: packrat
+          POSTGRES_PASSWORD: packrat
+          POSTGRES_DB: packrat
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U packrat -d packrat"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgres://packrat:packrat@127.0.0.1:5432/packrat?sslmode=disable
     steps:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - uses: Swatinem/rust-cache@v2
+
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-tarpaulin
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli@0.8.6
+
+      - name: Apply migrations
+        run: sqlx migrate run --source crates/packrat_infrastructure/migrations
 
       - name: Generate coverage
         env:

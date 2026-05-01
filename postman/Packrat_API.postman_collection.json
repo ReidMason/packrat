@@ -1,0 +1,85 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-packrat-api",
+    "name": "Packrat API",
+    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/health",
+            "description": "Liveness probe. 200 JSON: `{ \"data\": { \"status\": \"ok\" } }`. Does not hit the database."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/ready",
+            "description": "Readiness probe: runs `SELECT 1` on Postgres. 200 with `{ \"data\": { \"status\": \"ready\", \"database\": \"ok\" } }` when DB is up; 503 with standard error JSON if the database is unreachable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Items",
+      "item": [
+        {
+          "name": "Create item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toolbox\",\n  \"parent_id\": null\n}"
+            },
+            "url": "{{base_url}}/api/items",
+            "description": "Creates a root item when `parent_id` is null. Set `parent_id` to an existing item id to nest."
+          },
+          "response": []
+        },
+        {
+          "name": "Get item by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/items/1",
+            "description": "Returns 404 if the item does not exist. Change the `1` in the path to another id as needed."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/items/1",
+            "description": "204 on success. 404 if not found. 409 if the item still has children. Change the `1` in the path to another id as needed."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

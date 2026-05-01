@@ -22,6 +22,9 @@ services:
     image: packrat:local
     environment:
       DATABASE_URL: postgres://packrat:packrat@postgres:5432/packrat?sslmode=disable
+      # LISTEN_ADDR: "0.0.0.0:3000"
+    ports:
+      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
