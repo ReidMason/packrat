@@ -1,6 +1,10 @@
+# One-shot: emit utilities used in `input.css` @source paths (desktop/mobile/web `.rs`).
+tailwind-build:
+  npm run build
+
 tailwind:
-  tailwindcss -i input.css -o ./assets/tailwind.css --watch
+  npm run watch
 
 tailwind-win:
   #!powershell.exe
-  .\tailwindcss-windows-x64.exe -i input.css -o ./assets/tailwind.css --watch
+  npm run watch

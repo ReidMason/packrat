@@ -1,3 +1,3 @@
+pub mod assets;
 pub mod health;
-pub mod items;
 pub mod ready;

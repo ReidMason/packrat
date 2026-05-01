@@ -1,10 +1,13 @@
-use axum::routing::{delete, get, post};
+use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::handlers::assets::{
+    create_asset_handler, delete_asset_handler, get_asset_handler, list_child_assets_handler,
+    list_assets_handler, search_assets_handler,
+};
 use crate::handlers::health::health_handler;
-use crate::handlers::items::{create_item_handler, delete_item_handler, get_item_handler};
 use crate::handlers::ready::ready_handler;
 use crate::state::AppState;
 
@@ -12,9 +15,13 @@ fn api_router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health_handler))
         .route("/ready", get(ready_handler))
-        .route("/items", post(create_item_handler))
-        .route("/items/{id}", get(get_item_handler))
-        .route("/items/{id}", delete(delete_item_handler))
+        .route("/assets/search", post(search_assets_handler))
+        .route("/assets", get(list_assets_handler).post(create_asset_handler))
+        .route("/assets/{id}/children", get(list_child_assets_handler))
+        .route(
+            "/assets/{id}",
+            get(get_asset_handler).delete(delete_asset_handler),
+        )
         .with_state(state)
 }
 
