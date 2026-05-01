@@ -34,6 +34,13 @@ coverage:
 run-api:
     #!/usr/bin/env bash
     set -euo pipefail
+
+    if lsof -t -i :3000 > /dev/null; then
+        echo "Cleaning up existing API process on port 3000..."
+        kill -9 $(lsof -t -i :3000) || true
+        sleep 0.5
+    fi
+
     export DATABASE_URL="{{db_url}}"
     export LISTEN_ADDR="${LISTEN_ADDR:-127.0.0.1:3000}"
     export SQLX_OFFLINE="${SQLX_OFFLINE:-true}"
