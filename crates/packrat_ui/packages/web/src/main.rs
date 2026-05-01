@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 use ui::{Navbar, TailwindConfig};
-use views::{Blog, Home};
+use views::Home;
 
+mod api_client;
 mod views;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -10,8 +11,6 @@ enum Route {
     #[layout(WebNavbar)]
     #[route("/")]
     Home {},
-    #[route("/blog/:id")]
-    Blog { id: i32 },
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -31,19 +30,20 @@ fn App() -> Element {
     }
 }
 
-/// A web-specific Router around the shared `Navbar` component
-/// which allows us to use the web-specific `Route` enum.
 #[component]
 fn WebNavbar() -> Element {
     rsx! {
-        Navbar {
-            Link {
-                to: Route::Home {},
-                "Home"
-            }
-            Link {
-                to: Route::Blog { id: 1 },
-                "Blog"
+        header {
+            class: "border-b border-ui-bg-dim bg-ui-bg-dim/80 backdrop-blur-sm",
+            Navbar {
+                div {
+                    class: "max-w-3xl mx-auto px-4 py-3 flex items-center gap-6 text-sm font-medium text-ui-text",
+                    Link {
+                        class: "text-ui-primary hover:underline",
+                        to: Route::Home {},
+                        "Inventory"
+                    }
+                }
             }
         }
         Outlet::<Route> {}
