@@ -161,19 +161,3 @@ pub async fn create_item(base: &str, name: String, parent_id: Option<i64>) -> Re
     let wrapped: SuccessBody<ItemDto> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(wrapped.data)
 }
-
-pub async fn delete_item(base: &str, id: i64) -> Result<(), String> {
-    let url = format!("{}/api/items/{id}", normalize_base(base));
-    let resp = reqwest::Client::new()
-        .delete(&url)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-    if resp.status() == reqwest::StatusCode::NO_CONTENT {
-        return Ok(());
-    }
-    if !resp.status().is_success() {
-        return Err(map_api_error(resp).await);
-    }
-    Ok(())
-}

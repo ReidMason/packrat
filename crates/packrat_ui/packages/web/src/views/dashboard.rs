@@ -37,9 +37,6 @@ pub fn Dashboard() -> Element {
     let search_results = use_signal(|| Option::<Result<Vec<ItemDto>, String>>::None);
     let search_busy = use_signal(|| false);
 
-    let mut delete_id = use_signal(|| String::new());
-    let mut delete_flash = use_signal(|| Option::<String>::None);
-
     rsx! {
         div {
             class: "max-w-6xl mx-auto px-4 py-8 space-y-8",
@@ -48,7 +45,7 @@ pub fn Dashboard() -> Element {
                 class: "space-y-1",
                 h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "Dashboard" }
                 p { class: "text-sm text-ui-text-muted max-w-2xl leading-relaxed",
-                    "Search items by name, or remove one by reference. Recent opens stay in this browser only. ",
+                    "Search items by name. Recent opens stay in this browser only. ",
                     "API URL and health checks are under Debug."
                 }
                 Link {
@@ -160,49 +157,6 @@ pub fn Dashboard() -> Element {
                             }
                         }
                     }
-                }
-            }
-
-            section {
-                class: "rounded-xl border border-dashed border-ui-bg-dim bg-ui-bg-dim/30 p-5 space-y-4 max-w-2xl",
-                h2 { class: "text-lg font-medium text-ui-text", "Delete item" }
-                p { class: "text-sm text-ui-text-muted",
-                    "Soft delete on the server. Items with active children return 409."
-                }
-                div {
-                    class: "flex flex-col sm:flex-row gap-3 sm:items-end max-w-xl",
-                    label {
-                        class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
-                        span { "Reference" }
-                        input {
-                            class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
-                            r#type: "text",
-                            inputmode: "numeric",
-                            value: "{delete_id}",
-                            oninput: move |e| *delete_id.write() = e.value(),
-                        }
-                    }
-                    button {
-                        class: "shrink-0 rounded-lg bg-ui-error text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90",
-                        onclick: move |_| {
-                            let base = api_base();
-                            let raw = delete_id().trim().to_string();
-                            spawn(async move {
-                                let out = match raw.parse::<i64>() {
-                                    Ok(id) => match api_client::delete_item(&base, id).await {
-                                        Ok(()) => "Item removed.".into(),
-                                        Err(e) => format!("Error: {e}"),
-                                    },
-                                    Err(_) => "Enter a whole number.".into(),
-                                };
-                                delete_flash.set(Some(out));
-                            });
-                        },
-                        "Delete"
-                    }
-                }
-                if let Some(msg) = delete_flash() {
-                    p { class: "text-sm text-ui-warning", "{msg}" }
                 }
             }
         }
