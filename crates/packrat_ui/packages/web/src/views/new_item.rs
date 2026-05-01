@@ -10,7 +10,7 @@ pub fn NewItem() -> Element {
     let recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut name = use_signal(String::new);
-    // Empty string = no parent; otherwise a decimal item id.
+    // Empty string = no parent; otherwise option value is the parent's numeric key (not shown in labels).
     let mut parent_sel = use_signal(String::new);
     let mut flash = use_signal(|| Option::<String>::None);
     let mut busy = use_signal(|| false);
@@ -68,7 +68,7 @@ pub fn NewItem() -> Element {
                                     option {
                                         key: "{row.id}",
                                         value: "{row.id}",
-                                        "#{row.id} — {row.name}"
+                                        "{row.name}"
                                     }
                                 }
                             }
@@ -93,7 +93,7 @@ pub fn NewItem() -> Element {
                                 s => match s.parse::<i64>() {
                                     Ok(id) => Some(id),
                                     Err(_) => {
-                                        flash.set(Some("Parent must be a valid item id.".into()));
+                                        flash.set(Some("Choose a parent from the list.".into()));
                                         return;
                                     }
                                 },
@@ -105,7 +105,7 @@ pub fn NewItem() -> Element {
                                 match api_client::create_item(&base, n, parent_id).await {
                                     Ok(item) => {
                                         remember_recent(recent_sig, item.id, item.name.clone());
-                                        flash.set(Some(format!("Created #{} — {}", item.id, item.name)));
+                                        flash.set(Some(format!("Created “{}”.", item.name)));
                                         name.write().clear();
                                         parent_sel.write().clear();
                                         *list_gen.write() += 1;

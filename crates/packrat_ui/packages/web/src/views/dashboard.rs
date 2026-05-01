@@ -15,7 +15,7 @@ fn spawn_lookup(
     spawn(async move {
         let res = match raw.parse::<i64>() {
             Ok(id) => api_client::get_item(&base, id).await,
-            Err(_) => Err("ID must be a number.".into()),
+            Err(_) => Err("Enter a whole number.".into()),
         };
         if let Ok(ref item) = res {
             remember_recent(recent, item.id, item.name.clone());
@@ -45,7 +45,7 @@ pub fn Dashboard() -> Element {
                 class: "space-y-1",
                 h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "Dashboard" }
                 p { class: "text-sm text-ui-text-muted max-w-2xl leading-relaxed",
-                    "Open items by ID or remove them. Recent opens stay in this browser only. ",
+                    "Look up or remove items. Recent opens stay in this browser only. ",
                     "API URL and health checks are under Debug."
                 }
                 Link {
@@ -57,18 +57,18 @@ pub fn Dashboard() -> Element {
 
             section {
                 class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4 max-w-2xl",
-                h2 { class: "text-lg font-medium text-ui-text", "Open by ID" }
-                p { class: "text-sm text-ui-text-muted", "Load one item from the API." }
+                h2 { class: "text-lg font-medium text-ui-text", "Look up item" }
+                p { class: "text-sm text-ui-text-muted", "Load one item from the API using its reference number." }
                 div {
                     class: "flex flex-col sm:flex-row gap-3 sm:items-end",
                     label {
                         class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
-                        span { "Item ID" }
+                        span { "Reference" }
                         input {
                             class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
                             r#type: "text",
                             inputmode: "numeric",
-                            placeholder: "e.g. 1",
+                            placeholder: "Whole number",
                             value: "{lookup_id}",
                             oninput: move |e| *lookup_id.write() = e.value(),
                         }
@@ -124,14 +124,12 @@ pub fn Dashboard() -> Element {
                                 div {
                                     class: "min-w-0",
                                     p { class: "text-sm font-medium text-ui-text truncate", "{entry.name}" }
-                                    p { class: "text-xs text-ui-text-muted font-mono", "#{entry.id}" }
                                 }
                                 button {
                                     class: "shrink-0 rounded-lg border border-ui-bg-dim px-3 py-1.5 text-xs font-medium text-ui-text hover:bg-ui-bg-dim",
                                     onclick: {
                                         let id = entry.id;
                                         move |_| {
-                                            *lookup_id.write() = id.to_string();
                                             spawn_lookup(
                                                 api_base(),
                                                 id.to_string(),
@@ -159,7 +157,7 @@ pub fn Dashboard() -> Element {
                     class: "flex flex-col sm:flex-row gap-3 sm:items-end max-w-xl",
                     label {
                         class: "flex-1 flex flex-col gap-1 text-sm text-ui-text-muted",
-                        span { "Item ID" }
+                        span { "Reference" }
                         input {
                             class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
                             r#type: "text",
@@ -176,10 +174,10 @@ pub fn Dashboard() -> Element {
                             spawn(async move {
                                 let out = match raw.parse::<i64>() {
                                     Ok(id) => match api_client::delete_item(&base, id).await {
-                                        Ok(()) => format!("Item #{id} deleted (or marked deleted)."),
+                                        Ok(()) => "Item removed.".into(),
                                         Err(e) => format!("Error: {e}"),
                                     },
-                                    Err(_) => "ID must be a number.".into(),
+                                    Err(_) => "Enter a whole number.".into(),
                                 };
                                 delete_flash.set(Some(out));
                             });
@@ -197,23 +195,25 @@ pub fn Dashboard() -> Element {
 
 #[component]
 fn ItemCard(item: ItemDto) -> Element {
+    let parent_note = if item.parent_id.is_some() {
+        "Nested under another item"
+    } else {
+        "Top level"
+    };
     rsx! {
         div {
             class: "rounded-lg border border-ui-bg-dim bg-ui-bg-dim/40 p-4 space-y-2 text-sm",
-            div {
-                class: "flex flex-wrap gap-x-4 gap-y-1 text-ui-text",
-                span { class: "font-medium", "ID {item.id}" }
-                span { class: "text-ui-text-muted", "—" }
-                span { "{item.name}" }
-            }
+            p { class: "text-base font-medium text-ui-text", "{item.name}" }
             dl {
-                class: "grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ui-text-muted font-mono text-xs",
-                dt { "parent_id" }
-                dd { "{item.parent_id:?}" }
-                dt { "created" }
-                dd { "{item.created}" }
-                dt { "deleted" }
-                dd { "{item.deleted:?}" }
+                class: "grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ui-text-muted text-xs",
+                dt { "Placement" }
+                dd { "{parent_note}" }
+                dt { "Created" }
+                dd { class: "font-mono", "{item.created}" }
+                if item.deleted.is_some() {
+                    dt { "Status" }
+                    dd { "Removed" }
+                }
             }
         }
     }
