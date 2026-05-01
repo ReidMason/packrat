@@ -136,7 +136,12 @@
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
 
           shellHook = ''
+            rustc --version
             dx --version
+
+            if command -v zsh >/dev/null 2>&1 && [ -z "$ZSH_VERSION" ]; then
+                exec zsh
+              fi
           '';
         }
         // linuxAndroid.shellEnv);
