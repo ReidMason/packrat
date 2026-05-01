@@ -1,10 +1,10 @@
 use dioxus::prelude::*;
 
-use super::inventory::Inventory;
+use super::dashboard::Dashboard;
 
 #[component]
 pub fn Home() -> Element {
     rsx! {
-        Inventory {}
+        Dashboard {}
     }
 }

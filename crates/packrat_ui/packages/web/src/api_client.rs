@@ -16,12 +16,12 @@ struct ErrorBody {
     error: ErrorEnvelope,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct HealthDto {
     pub status: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct ReadyDto {
     pub status: String,
     pub database: String,
@@ -86,6 +86,13 @@ pub async fn fetch_ready(base: &str) -> Result<ReadyDto, String> {
     }
     let body: SuccessBody<ReadyDto> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.data)
+}
+
+/// Liveness and readiness in one round-trip pair (for the dashboard).
+pub async fn fetch_api_status(base: &str) -> (Result<HealthDto, String>, Result<ReadyDto, String>) {
+    let h = fetch_health(base).await;
+    let r = fetch_ready(base).await;
+    (h, r)
 }
 
 pub async fn get_item(base: &str, id: i64) -> Result<ItemDto, String> {
