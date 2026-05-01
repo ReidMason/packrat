@@ -28,3 +28,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: packrat-web:local
+    ports:
+      - "8080:80"
+    depends_on:
+      - packrat
