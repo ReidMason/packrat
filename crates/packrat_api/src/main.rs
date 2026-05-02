@@ -13,8 +13,6 @@ use packrat_infrastructure::{
 
 use crate::state::AppState;
 
-/// Dioxus `public/` output: a directory containing `index.html`, from `PACKRAT_STATIC_UI`.
-/// If unset or invalid, returns `None` (API-only).
 fn static_ui_dir() -> Option<PathBuf> {
     std::env::var("PACKRAT_STATIC_UI").ok().and_then(|s| {
         let p = PathBuf::from(s);
