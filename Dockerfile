@@ -1,4 +1,3 @@
-
 ARG RUST_VERSION=1
 
 FROM node:22-bookworm AS tailwind
