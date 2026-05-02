@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 
-use crate::api_base::DEFAULT_API_BASE;
 use crate::api_client::{self, HealthDto, ReadyDto};
 
 fn spawn_status_refresh(
@@ -34,37 +33,21 @@ pub fn DebugPage() -> Element {
             class: "max-w-3xl mx-auto px-4 py-8 space-y-8",
 
             div {
-                class: "space-y-1",
-                h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "Debug" }
-                p { class: "text-sm text-ui-text-muted max-w-2xl leading-relaxed",
-                    "Liveness and readiness checks against the API base URL in use (read-only here). The main dashboard uses the same value."
-                }
-            }
-
-            section {
-                class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4",
-                h2 { class: "text-sm font-semibold uppercase tracking-wide text-ui-text-muted", "Connection" }
+                class: "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
                 div {
-                    class: "flex flex-col lg:flex-row gap-4 lg:items-end",
-                    label {
-                        class: "flex-1 flex flex-col gap-1.5 text-sm text-ui-text-muted",
-                        span { "API base URL" }
-                        input {
-                            class: "bg-ui-bg-dim/60 border border-ui-bg-dim rounded-lg px-3 py-2.5 text-ui-text cursor-default",
-                            r#type: "url",
-                            placeholder: "{DEFAULT_API_BASE}",
-                            value: "{api_base}",
-                            readonly: true,
-                        }
+                    class: "space-y-1 min-w-0",
+                    h1 { class: "text-2xl font-semibold text-ui-text tracking-tight", "Debug" }
+                    p { class: "text-sm text-ui-text-muted max-w-2xl leading-relaxed",
+                        "Liveness and readiness against the same API the app uses (same origin in Docker; localhost when running the API separately)."
                     }
-                    button {
-                        class: "shrink-0 rounded-lg bg-ui-primary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50",
-                        disabled: status_busy(),
-                        onclick: move |_| {
-                            spawn_status_refresh(api_base(), status_busy, health, ready);
-                        },
-                        if status_busy() { "Checking…" } else { "Refresh status" }
-                    }
+                }
+                button {
+                    class: "shrink-0 self-start rounded-lg bg-ui-primary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50",
+                    disabled: status_busy(),
+                    onclick: move |_| {
+                        spawn_status_refresh(api_base(), status_busy, health, ready);
+                    },
+                    if status_busy() { "Checking…" } else { "Refresh status" }
                 }
             }
 
@@ -86,9 +69,9 @@ pub fn DebugPage() -> Element {
                     class: "rounded-xl border border-ui-bg-dim bg-ui-bg-dim/50 p-5 flex flex-col justify-center",
                     p { class: "text-xs font-medium uppercase tracking-wide text-ui-text-muted", "Tip" }
                     p { class: "text-sm text-ui-text mt-2 leading-relaxed",
-                        "Run ",
-                        code { class: "text-ui-secondary text-xs", "just run-api" },
-                        " with Postgres, then refresh status here."
+                        "Ensure Postgres is up (e.g. ",
+                        code { class: "text-ui-secondary text-xs", "docker compose up -d postgres" },
+                        ") before expecting readiness to pass."
                     }
                 }
             }

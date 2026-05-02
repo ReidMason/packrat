@@ -5,7 +5,11 @@ edition = "2021"
 
 [dependencies]
 dioxus = { workspace = true }
-api = { workspace = true }
+api = { workspace = true, optional = true }
 
 [features]
-server = ["api/server"]
+default = []
+# Enables `Echo` (server-fn demo). Keep off for `web` so `api`'s `dioxus/fullstack` does not
+# unify into the WASM client (hydration / atob without SSR).
+demo_echo = ["dep:api"]
+server = ["demo_echo", "api/server"]

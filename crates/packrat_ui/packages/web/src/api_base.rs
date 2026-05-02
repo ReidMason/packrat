@@ -1,6 +1,7 @@
-//! Default API base URL. On WASM, `initial_api_base` may read a previously stored value from
-//! `localStorage` (key `packrat_api_base_v1`) so older sessions keep working; the UI no longer writes it.
+#[cfg(target_arch = "wasm32")]
+pub const DEFAULT_API_BASE: &str = "";
 
+#[cfg(not(target_arch = "wasm32"))]
 pub const DEFAULT_API_BASE: &str = "http://127.0.0.1:3000";
 
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]

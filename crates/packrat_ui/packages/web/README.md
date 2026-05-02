@@ -16,15 +16,16 @@ web/
 ```
 
 ## Dependencies
-Since you have fullstack enabled, the web crate will be built two times:
-1. Once for the server build with the `server` feature enabled
-2. Once for the client build with the `web` feature enabled
 
-You should make **web-only** dependencies optional under the `wasm32` target where possible (this crate uses target-specific `reqwest` features: lightweight on WASM, `rustls` on the server build).
+This crate uses **`dioxus`** with **`router`** and **`web`** (client-side WASM only — no `fullstack`, so static hosting from `packrat_api` does not require SSR hydration data).
+
+Optional **`--features server`** enables the native server build (`dioxus/server`, `ui/server`) if you use fullstack tooling; day-to-day **`dx serve`** targets WASM only.
+
+Make **web-only** dependencies optional under the `wasm32` target where possible (this crate uses target-specific `reqwest`: lightweight on WASM, `rustls` on native).
 
 ### Packrat API
 
-Run `packrat_api` (default `http://127.0.0.1:3000`) with Postgres so `/api/health`, `/api/ready`, and `/api/assets` work. The UI defaults to that base URL; change it in the page and click **Refresh status**.
+With **`packrat_api`** serving the built UI on the same origin, the WASM client defaults to an **empty** API base (requests go to `/api/...` on the current host). For **`just run-api`** with the UI on another origin (e.g. `dx serve`), use **`http://127.0.0.1:3000`** or set `localStorage` key `packrat_api_base_v1` if needed.
 
 ### Serving Your Web App
 

@@ -1,8 +1,6 @@
 //! HTTP client for the Packrat Axum API (`/api/*`).
 use serde::{Deserialize, Serialize};
 
-use super::api_base::DEFAULT_API_BASE;
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct SuccessBody<T> {
     pub data: T,
@@ -46,11 +44,25 @@ struct CreateAssetRequest {
 }
 
 fn normalize_base(base: &str) -> String {
-    let t = base.trim().trim_end_matches('/');
-    if t.is_empty() {
-        return DEFAULT_API_BASE.trim().trim_end_matches('/').to_string();
+    base.trim().trim_end_matches('/').to_string()
+}
+
+fn http_base(configured: &str) -> String {
+    let b = normalize_base(configured);
+    if !b.is_empty() {
+        return b;
     }
-    t.to_string()
+    #[cfg(target_arch = "wasm32")]
+    {
+        web_sys::window()
+            .and_then(|w| w.location().origin().ok())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "http://127.0.0.1:3000".to_string())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        "http://127.0.0.1:3000".to_string()
+    }
 }
 
 async fn map_api_error(resp: reqwest::Response) -> String {
@@ -67,7 +79,7 @@ async fn map_api_error(resp: reqwest::Response) -> String {
 }
 
 pub async fn fetch_health(base: &str) -> Result<HealthDto, String> {
-    let url = format!("{}/api/health", normalize_base(base));
+    let url = format!("{}/api/health", http_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -81,7 +93,7 @@ pub async fn fetch_health(base: &str) -> Result<HealthDto, String> {
 }
 
 pub async fn fetch_ready(base: &str) -> Result<ReadyDto, String> {
-    let url = format!("{}/api/ready", normalize_base(base));
+    let url = format!("{}/api/ready", http_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -114,7 +126,7 @@ pub async fn search_assets(base: &str, fuzzyname: &str) -> Result<Vec<AssetDto>,
     if needle.is_empty() {
         return Err("Search text must not be empty.".into());
     }
-    let url = format!("{}/api/assets/search", normalize_base(base));
+    let url = format!("{}/api/assets/search", http_base(base));
     let body = SearchAssetsRequest {
         name: None,
         fuzzyname: Some(needle.to_string()),
@@ -133,7 +145,7 @@ pub async fn search_assets(base: &str, fuzzyname: &str) -> Result<Vec<AssetDto>,
 }
 
 pub async fn list_assets(base: &str) -> Result<Vec<AssetDto>, String> {
-    let url = format!("{}/api/assets", normalize_base(base));
+    let url = format!("{}/api/assets", http_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -147,7 +159,7 @@ pub async fn list_assets(base: &str) -> Result<Vec<AssetDto>, String> {
 }
 
 pub async fn get_asset(base: &str, id: i64) -> Result<AssetDto, String> {
-    let url = format!("{}/api/assets/{id}", normalize_base(base));
+    let url = format!("{}/api/assets/{id}", http_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -161,7 +173,7 @@ pub async fn get_asset(base: &str, id: i64) -> Result<AssetDto, String> {
 }
 
 pub async fn list_child_assets(base: &str, parent_id: i64) -> Result<Vec<AssetDto>, String> {
-    let url = format!("{}/api/assets/{parent_id}/children", normalize_base(base));
+    let url = format!("{}/api/assets/{parent_id}/children", http_base(base));
     let resp = reqwest::Client::new()
         .get(&url)
         .send()
@@ -179,7 +191,7 @@ pub async fn create_asset(
     name: String,
     parent_id: Option<i64>,
 ) -> Result<AssetDto, String> {
-    let url = format!("{}/api/assets", normalize_base(base));
+    let url = format!("{}/api/assets", http_base(base));
     let body = CreateAssetRequest { name, parent_id };
     let resp = reqwest::Client::new()
         .post(&url)
@@ -195,7 +207,7 @@ pub async fn create_asset(
 }
 
 pub async fn delete_asset(base: &str, id: i64) -> Result<(), String> {
-    let url = format!("{}/api/assets/{id}", normalize_base(base));
+    let url = format!("{}/api/assets/{id}", http_base(base));
     let resp = reqwest::Client::new()
         .delete(&url)
         .send()
