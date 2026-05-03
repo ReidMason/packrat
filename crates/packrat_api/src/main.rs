@@ -2,7 +2,9 @@ mod app;
 mod dto;
 mod handlers;
 mod state;
+mod static_ui;
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use packrat_infrastructure::{
@@ -10,6 +12,21 @@ use packrat_infrastructure::{
 };
 
 use crate::state::AppState;
+
+fn static_ui_dir() -> Option<PathBuf> {
+    std::env::var("PACKRAT_STATIC_UI").ok().and_then(|s| {
+        let p = PathBuf::from(s);
+        if p.is_dir() && p.join("index.html").is_file() {
+            Some(p)
+        } else {
+            tracing::warn!(
+                path = %p.display(),
+                "PACKRAT_STATIC_UI is set but is not a directory with index.html; serving API routes only"
+            );
+            None
+        }
+    })
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -26,13 +43,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let pool = connect_pool(&database_url).await?;
     run_migrations(&pool).await?;
 
+    let static_ui = static_ui_dir();
+
     let state = AppState {
         readiness: PostgresReadiness::new(pool.clone()),
         command: Arc::new(PostgresAssetCommand::new(pool.clone())),
         query: Arc::new(PostgresAssetQuery::new(pool)),
     };
 
-    let app = app::build_app(state);
+    let app = app::build_app(state, static_ui);
 
     let listener = tokio::net::TcpListener::bind(&listen).await?;
     tracing::info!("listening on http://{}", listen);

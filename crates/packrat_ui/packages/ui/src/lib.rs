@@ -8,5 +8,7 @@ pub use hero::Hero;
 mod navbar;
 pub use navbar::Navbar;
 
+#[cfg(feature = "demo_echo")]
 mod echo;
+#[cfg(feature = "demo_echo")]
 pub use echo::Echo;
