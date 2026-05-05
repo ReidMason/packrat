@@ -60,12 +60,7 @@ mod tests {
                         .as_deref()
                         .map(str::trim)
                         .filter(|s| !s.is_empty())
-                        .map(|n| {
-                            e.name
-                                .as_str()
-                                .to_lowercase()
-                                .contains(&n.to_lowercase())
-                        })
+                        .map(|n| e.name.as_str().to_lowercase().contains(&n.to_lowercase()))
                         .unwrap_or(true);
                     name_ok && fuzzy_ok
                 })

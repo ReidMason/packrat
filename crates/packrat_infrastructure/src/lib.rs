@@ -1,6 +1,7 @@
 //! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
 mod postgres;
+mod postgres_user;
 mod readiness;
 
 use async_trait::async_trait;
@@ -15,6 +16,7 @@ use std::{
 pub use postgres::{
     PostgresAssetCommand, PostgresAssetQuery, connect_pool, ping_database, run_migrations,
 };
+pub use postgres_user::PostgresUserCommand;
 pub use readiness::PostgresReadiness;
 
 use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
@@ -67,12 +69,7 @@ impl AssetQueryPort for StubAssetQuery {
                     .as_deref()
                     .map(str::trim)
                     .filter(|s| !s.is_empty())
-                    .map(|n| {
-                        e.name
-                            .as_str()
-                            .to_lowercase()
-                            .contains(&n.to_lowercase())
-                    })
+                    .map(|n| e.name.as_str().to_lowercase().contains(&n.to_lowercase()))
                     .unwrap_or(true);
                 name_ok && fuzzy_ok
             })
