@@ -1,5 +1,6 @@
 pub mod asset;
 pub mod health;
+pub mod tenant;
 pub mod user;
 
 pub use asset::{
@@ -7,4 +8,5 @@ pub use asset::{
     update_asset,
 };
 pub use health::check_readiness;
+pub use tenant::create_tenant;
 pub use user::create_user;

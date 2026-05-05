@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use packrat_infrastructure::{
-    PostgresAssetCommand, PostgresAssetQuery, PostgresReadiness, PostgresUserCommand, connect_pool,
-    run_migrations,
+    PostgresAssetCommand, PostgresAssetQuery, PostgresReadiness, PostgresTenantCommand,
+    PostgresUserCommand, connect_pool, run_migrations,
 };
 
 use crate::state::AppState;
@@ -50,7 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         readiness: PostgresReadiness::new(pool.clone()),
         command: Arc::new(PostgresAssetCommand::new(pool.clone())),
         query: Arc::new(PostgresAssetQuery::new(pool.clone())),
-        user_command: Arc::new(PostgresUserCommand::new(pool)),
+        user_command: Arc::new(PostgresUserCommand::new(pool.clone())),
+        tenant_command: Arc::new(PostgresTenantCommand::new(pool)),
     };
 
     let app = app::build_app(state, static_ui);

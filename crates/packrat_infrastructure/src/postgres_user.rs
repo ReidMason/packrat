@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 
 use packrat_application::{UserCommandError, UserCommandPort};
 use packrat_domain::entity::EntityTimestamp;
@@ -19,38 +19,24 @@ impl PostgresUserCommand {
 impl UserCommandPort for PostgresUserCommand {
     async fn create_user(&self, email: Email) -> Result<User, UserCommandError> {
         let normalized = email.as_str().trim().to_lowercase();
-        let result = sqlx::query(
+        let result = sqlx::query!(
             r#"
             INSERT INTO users (email)
             VALUES ($1)
             RETURNING id, email, created, updated
             "#,
+            normalized,
         )
-        .bind(&normalized)
         .fetch_one(&self.pool)
         .await;
 
         match result {
-            Ok(row) => {
-                let id: i64 = row
-                    .try_get("id")
-                    .map_err(|e| UserCommandError::Persist(e.to_string()))?;
-                let email_db: String = row
-                    .try_get("email")
-                    .map_err(|e| UserCommandError::Persist(e.to_string()))?;
-                let created: chrono::DateTime<chrono::Utc> = row
-                    .try_get("created")
-                    .map_err(|e| UserCommandError::Persist(e.to_string()))?;
-                let updated: chrono::DateTime<chrono::Utc> = row
-                    .try_get("updated")
-                    .map_err(|e| UserCommandError::Persist(e.to_string()))?;
-                Ok(User::new(
-                    UserId::from(id),
-                    Email::from(email_db),
-                    EntityTimestamp::from(created),
-                    EntityTimestamp::from(updated),
-                ))
-            }
+            Ok(row) => Ok(User::new(
+                UserId::from(row.id),
+                Email::from(row.email),
+                EntityTimestamp::from(row.created),
+                EntityTimestamp::from(row.updated),
+            )),
             Err(e) => {
                 if let Some(db) = e.as_database_error() {
                     if db.code().as_deref() == Some("23505") {
