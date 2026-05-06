@@ -30,4 +30,3 @@ impl From<AssetTimestamp> for chrono::DateTime<chrono::Utc> {
         ts.0
     }
 }
-
