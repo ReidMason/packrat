@@ -1,7 +1,6 @@
 use packrat_domain::entity::Entity;
 use serde::Serialize;
 
-/// **DTO** — JSON body for `POST /api/assets`.
 #[derive(serde::Deserialize)]
 pub struct CreateAssetDto {
     pub name: String,
@@ -9,7 +8,6 @@ pub struct CreateAssetDto {
     pub parent_id: Option<i64>,
 }
 
-/// **DTO** — JSON body for `POST /api/assets/search`.
 #[derive(serde::Deserialize)]
 pub struct SearchAssetsDto {
     #[serde(default)]

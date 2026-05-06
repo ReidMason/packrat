@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assets SET deleted = NOW() WHERE id = $1 AND deleted IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bc8e0865e033dd29e28a845b42c2c5f8527423876d6a7029cfd583d6099594f9"
+}

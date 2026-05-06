@@ -21,11 +21,7 @@ mod tests {
             unimplemented!()
         }
 
-        async fn update_asset(
-            &self,
-            _id: EntityId,
-            _changes: PartialEntity,
-        ) -> Result<(), String> {
+        async fn update_asset(&self, _id: EntityId, _changes: PartialEntity) -> Result<(), String> {
             unimplemented!()
         }
 

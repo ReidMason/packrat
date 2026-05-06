@@ -26,10 +26,7 @@ mod tests {
             self.0.clone()
         }
 
-        async fn search_assets(
-            &self,
-            _query: &crate::ports::AssetSearchQuery,
-        ) -> Vec<Entity> {
+        async fn search_assets(&self, _query: &crate::ports::AssetSearchQuery) -> Vec<Entity> {
             Vec::new()
         }
 

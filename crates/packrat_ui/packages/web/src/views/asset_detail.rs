@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
-use crate::Route;
-use crate::api_client::{self, AssetDto};
 use super::recent_store::{self, RecentBrief};
+use crate::api_client::{self, AssetDto};
+use crate::Route;
 
 /// Asset detail is driven by the URL, not only the `id` prop from the router outlet: the outlet can
 /// reuse the same component slot when only `/assets/:id` changes, so we read [`Route`] from the

@@ -36,6 +36,22 @@ pub struct AssetDto {
     pub deleted: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct UserDto {
+    pub id: i64,
+    pub email: String,
+    pub created: String,
+    pub updated: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct TenantDto {
+    pub id: i64,
+    pub name: String,
+    pub created: String,
+    pub updated: String,
+}
+
 #[derive(Debug, Serialize)]
 struct CreateAssetRequest {
     name: String,
@@ -47,6 +63,35 @@ fn normalize_base(base: &str) -> String {
     base.trim().trim_end_matches('/').to_string()
 }
 
+#[cfg(target_arch = "wasm32")]
+fn wasm_default_http_base() -> String {
+    let Some(win) = web_sys::window() else {
+        return "http://127.0.0.1:3000".to_string();
+    };
+    let Ok(origin) = win.location().origin() else {
+        return "http://127.0.0.1:3000".to_string();
+    };
+    let origin = origin.trim_end_matches('/').to_string();
+    if origin.is_empty() {
+        return "http://127.0.0.1:3000".to_string();
+    }
+    let host_lc = win
+        .location()
+        .hostname()
+        .ok()
+        .unwrap_or_default()
+        .to_lowercase();
+    let port = win.location().port().unwrap_or_default();
+    let local = host_lc == "localhost"
+        || host_lc == "127.0.0.1"
+        || host_lc == "[::1]"
+        || host_lc.ends_with(".localhost");
+    if local && !port.is_empty() && port != "3000" {
+        return "http://127.0.0.1:3000".to_string();
+    }
+    origin
+}
+
 fn http_base(configured: &str) -> String {
     let b = normalize_base(configured);
     if !b.is_empty() {
@@ -54,10 +99,7 @@ fn http_base(configured: &str) -> String {
     }
     #[cfg(target_arch = "wasm32")]
     {
-        web_sys::window()
-            .and_then(|w| w.location().origin().ok())
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| "http://127.0.0.1:3000".to_string())
+        wasm_default_http_base()
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -220,4 +262,46 @@ pub async fn delete_asset(base: &str, id: i64) -> Result<(), String> {
         return Err(map_api_error(resp).await);
     }
     Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct CreateUserRequest {
+    email: String,
+}
+
+#[derive(Debug, Serialize)]
+struct CreateTenantRequest {
+    name: String,
+}
+
+pub async fn create_user(base: &str, email: String) -> Result<UserDto, String> {
+    let url = format!("{}/api/users", http_base(base));
+    let body = CreateUserRequest { email };
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let wrapped: SuccessBody<UserDto> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(wrapped.data)
+}
+
+pub async fn create_tenant(base: &str, name: String) -> Result<TenantDto, String> {
+    let url = format!("{}/api/tenants", http_base(base));
+    let body = CreateTenantRequest { name };
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let wrapped: SuccessBody<TenantDto> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(wrapped.data)
 }

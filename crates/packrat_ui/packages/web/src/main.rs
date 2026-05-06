@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use ui::TailwindConfig;
-use views::{AssetDetail, DebugPage, Home, NewAsset};
 use views::recent_store;
+use views::{AssetDetail, DebugPage, Home, NewAsset, Setup};
 
 mod api_base;
 mod api_client;
@@ -19,6 +19,8 @@ enum Route {
     AssetDetail { id: i64 },
     #[route("/debug")]
     DebugPage {},
+    #[route("/setup")]
+    Setup {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -72,6 +74,11 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
+                        to: Route::Setup {},
+                        "Setup"
+                    }
+                    Link {
+                        class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
                         to: Route::DebugPage {},
                         "Debug"
                     }
@@ -90,6 +97,11 @@ fn AppShell() -> Element {
                         class: "text-sm font-medium text-ui-text-muted",
                         to: Route::NewAsset {},
                         "New asset"
+                    }
+                    Link {
+                        class: "text-sm font-medium text-ui-text-muted",
+                        to: Route::Setup {},
+                        "Setup"
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",

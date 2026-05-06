@@ -234,9 +234,7 @@ mod postgres_tests {
     async fn test_delete_asset_errors_when_is_parent(pool: PgPool) {
         let command = PostgresAssetCommand::new(pool.clone());
 
-        let parent = command
-            .create_asset(EntityName::from("Parent"), None)
-            .await;
+        let parent = command.create_asset(EntityName::from("Parent"), None).await;
 
         let _child = command
             .create_asset(EntityName::from("Child"), Some(parent.id))
@@ -274,9 +272,7 @@ mod postgres_tests {
     #[sqlx::test]
     async fn test_delete_asset_successfully(pool: PgPool) {
         let command = PostgresAssetCommand::new(pool.clone());
-        let asset = command
-            .create_asset(EntityName::from("Target"), None)
-            .await;
+        let asset = command.create_asset(EntityName::from("Target"), None).await;
 
         let result = command.delete_asset(asset.id).await;
 

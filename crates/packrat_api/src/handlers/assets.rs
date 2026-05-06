@@ -2,8 +2,8 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use packrat_application::{
-    create_asset, get_asset, list_child_assets, list_assets, search_assets, AssetCommandPort,
-    AssetSearchQuery,
+    AssetCommandPort, AssetSearchQuery, create_asset, get_asset, list_assets, list_child_assets,
+    search_assets,
 };
 use packrat_domain::entity::{EntityId, EntityName};
 
@@ -55,20 +55,14 @@ pub async fn list_assets_handler(
     State(state): State<AppState>,
 ) -> Json<SuccessBody<Vec<AssetDto>>> {
     let entities = list_assets(state.query.as_ref()).await;
-    let dtos: Vec<AssetDto> = entities
-        .into_iter()
-        .map(AssetDto::from_entity)
-        .collect();
+    let dtos: Vec<AssetDto> = entities.into_iter().map(AssetDto::from_entity).collect();
     Json(SuccessBody::new(dtos))
 }
 
 pub async fn create_asset_handler(
     State(state): State<AppState>,
     Json(body): Json<CreateAssetDto>,
-) -> Result<
-    (StatusCode, Json<SuccessBody<AssetDto>>),
-    (StatusCode, Json<ErrorBody>),
-> {
+) -> Result<(StatusCode, Json<SuccessBody<AssetDto>>), (StatusCode, Json<ErrorBody>)> {
     if body.name.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
