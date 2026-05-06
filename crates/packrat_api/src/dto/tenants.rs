@@ -1,7 +1,6 @@
 use packrat_domain::tenant::Tenant;
 use serde::Serialize;
 
-/// JSON body for `POST /api/tenants`.
 #[derive(serde::Deserialize)]
 pub struct CreateTenantDto {
     pub name: String,
