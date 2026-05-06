@@ -94,37 +94,9 @@ impl From<Email> for String {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Username(String);
-
-impl Username {
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-}
-
-impl From<&str> for Username {
-    fn from(s: &str) -> Self {
-        Username(s.to_string())
-    }
-}
-
-impl From<String> for Username {
-    fn from(s: String) -> Self {
-        Username(s)
-    }
-}
-
-impl From<Username> for String {
-    fn from(username: Username) -> Self {
-        username.0
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct User {
     pub id: UserId,
     pub email: Email,
-    pub username: Username,
     pub password: PasswordHash,
     pub created: EntityTimestamp,
     pub updated: EntityTimestamp,
@@ -134,7 +106,6 @@ impl User {
     pub fn new(
         id: UserId,
         email: Email,
-        username: Username,
         password: PasswordHash,
         created: EntityTimestamp,
         updated: EntityTimestamp,
@@ -142,7 +113,6 @@ impl User {
         Self {
             id,
             email,
-            username,
             password,
             created,
             updated,
