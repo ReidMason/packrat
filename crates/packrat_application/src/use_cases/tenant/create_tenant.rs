@@ -1,5 +1,4 @@
 use packrat_domain::tenant::{Tenant, TenantName};
-
 use crate::ports::{TenantCommandError, TenantCommandPort};
 
 pub async fn execute(
@@ -22,8 +21,8 @@ mod tests {
             Ok(Tenant::new(
                 packrat_domain::tenant::TenantId::from(1),
                 name,
-                packrat_domain::entity::EntityTimestamp::static_for_tests(),
-                packrat_domain::entity::EntityTimestamp::static_for_tests(),
+                packrat_domain::asset::AssetTimestamp::static_for_tests(),
+                packrat_domain::asset::AssetTimestamp::static_for_tests(),
             ))
         }
     }

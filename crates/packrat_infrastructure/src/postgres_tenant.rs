@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 
 use packrat_application::{TenantCommandError, TenantCommandPort};
-use packrat_domain::entity::EntityTimestamp;
+use packrat_domain::asset::EntityTimestamp;
 use packrat_domain::tenant::{Tenant, TenantId, TenantName};
 
 pub struct PostgresTenantCommand {

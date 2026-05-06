@@ -1,5 +1,5 @@
-pub mod models;
+pub mod aggregates;
 
-pub use models::entity;
-pub use models::tenant;
-pub use models::user;
+pub use aggregates::asset;
+pub use aggregates::tenant;
+pub use aggregates::user;

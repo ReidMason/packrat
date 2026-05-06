@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 
 use packrat_application::{UserCommandError, UserCommandPort};
-use packrat_domain::entity::EntityTimestamp;
+use packrat_domain::asset::EntityTimestamp;
 use packrat_domain::user::{Email, User, UserId};
 
 pub struct PostgresUserCommand {

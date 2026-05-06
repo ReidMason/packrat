@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
-use packrat_domain::entity::EntityTimestamp;
-use packrat_domain::entity::{Entity, EntityId, EntityName};
-use packrat_domain::models::partial_entity::PartialEntity;
+use packrat_domain::asset::EntityTimestamp;
+use packrat_domain::asset::{Asset, EntityId, EntityName};
+use packrat_domain::aggregates::partial_asset::PartialAsset;
 use sqlx::PgPool;
 use sqlx::Row;
 use sqlx::postgres::PgPoolOptions;
@@ -19,7 +19,7 @@ impl PostgresAssetCommand {
 
 #[async_trait]
 impl AssetCommandPort for PostgresAssetCommand {
-    async fn create_asset(&self, name: EntityName, parent: Option<EntityId>) -> Entity {
+    async fn create_asset(&self, name: EntityName, parent: Option<EntityId>) -> Asset {
         let created = EntityTimestamp::now();
         let deleted = None;
         let id: i64 = sqlx::query_scalar!(
@@ -33,10 +33,10 @@ impl AssetCommandPort for PostgresAssetCommand {
         .await
         .expect("insert asset");
 
-        Entity::new(EntityId::from(id), name, parent, created, deleted)
+        Asset::new(EntityId::from(id), name, parent, created, deleted)
     }
 
-    async fn update_asset(&self, id: EntityId, changes: PartialEntity) -> Result<(), String> {
+    async fn update_asset(&self, id: EntityId, changes: PartialAsset) -> Result<(), String> {
         let current_row = sqlx::query!(
             "SELECT name, parent_id FROM assets WHERE id = $1 AND deleted IS NULL",
             i64::from(id)
@@ -111,7 +111,7 @@ impl PostgresAssetQuery {
         Self { pool }
     }
 
-    fn entity_from_row(row: &sqlx::postgres::PgRow) -> Option<Entity> {
+    fn entity_from_row(row: &sqlx::postgres::PgRow) -> Option<Asset> {
         let id: i64 = row.try_get("id").ok()?;
         let name: String = row.try_get("name").ok()?;
         let parent_id: Option<i64> = row.try_get("parent_id").ok()?;
@@ -122,7 +122,7 @@ impl PostgresAssetQuery {
             .try_get::<'_, Option<chrono::DateTime<chrono::Utc>>, _>("deleted")
             .ok()?;
 
-        Some(Entity::new(
+        Some(Asset::new(
             EntityId::from(id),
             EntityName::from(name),
             parent_id.map(EntityId::from),
@@ -134,7 +134,7 @@ impl PostgresAssetQuery {
 
 #[async_trait]
 impl AssetQueryPort for PostgresAssetQuery {
-    async fn get_asset_by_id(&self, id: EntityId) -> Option<Entity> {
+    async fn get_asset_by_id(&self, id: EntityId) -> Option<Asset> {
         let row =
             sqlx::query("SELECT id, name, parent_id, created, deleted FROM assets WHERE id = $1")
                 .bind(i64::from(id))
@@ -146,7 +146,7 @@ impl AssetQueryPort for PostgresAssetQuery {
         Self::entity_from_row(&row)
     }
 
-    async fn list_active_assets(&self) -> Vec<Entity> {
+    async fn list_active_assets(&self) -> Vec<Asset> {
         let rows = sqlx::query(
             "SELECT id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL ORDER BY LOWER(name) ASC",
         )
@@ -159,7 +159,7 @@ impl AssetQueryPort for PostgresAssetQuery {
             .collect()
     }
 
-    async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Entity> {
+    async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Asset> {
         let name = query
             .name
             .as_ref()
@@ -191,7 +191,7 @@ impl AssetQueryPort for PostgresAssetQuery {
             .collect()
     }
 
-    async fn list_child_assets(&self, parent_id: EntityId) -> Vec<Entity> {
+    async fn list_child_assets(&self, parent_id: EntityId) -> Vec<Asset> {
         let rows = sqlx::query(
             "SELECT id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND parent_id = $1 ORDER BY LOWER(name) ASC",
         )
@@ -227,7 +227,7 @@ pub async fn ping_database(pool: &PgPool) -> Result<(), sqlx::Error> {
 #[cfg(test)]
 mod postgres_tests {
     use super::*;
-    use packrat_domain::entity::EntityName;
+    use packrat_domain::asset::EntityName;
     use sqlx::Row;
 
     #[sqlx::test]
@@ -295,7 +295,7 @@ mod postgres_tests {
             .create_asset(EntityName::from("Old Name"), None)
             .await;
 
-        let changes = PartialEntity {
+        let changes = PartialAsset {
             name: Some(EntityName::from("New Name")),
             parent: None, // No change to parent
         };

@@ -5,7 +5,7 @@ use packrat_application::{
     AssetCommandPort, AssetSearchQuery, create_asset, get_asset, list_assets, list_child_assets,
     search_assets,
 };
-use packrat_domain::entity::{EntityId, EntityName};
+use packrat_domain::asset::{EntityId, EntityName};
 
 use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
 use crate::state::AppState;

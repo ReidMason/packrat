@@ -19,8 +19,8 @@ mod tests {
             Ok(User::new(
                 packrat_domain::user::UserId::from(1),
                 email,
-                packrat_domain::entity::EntityTimestamp::static_for_tests(),
-                packrat_domain::entity::EntityTimestamp::static_for_tests(),
+                packrat_domain::asset::AssetTimestamp::static_for_tests(),
+                packrat_domain::asset::AssetTimestamp::static_for_tests(),
             ))
         }
     }
