@@ -15,3 +15,4 @@ pub use readiness_port::ReadinessPort;
 pub use tenant_command_port::{TenantCommandError, TenantCommandPort};
 pub use user_command_port::{UserCommandError, UserCommandPort};
 pub use user_query_port::{UserQueryError, UserQueryPort};
+pub use user_session_command_port::{UserSessionCommandError, UserSessionCommandPort};

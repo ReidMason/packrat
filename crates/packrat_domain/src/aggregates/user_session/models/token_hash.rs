@@ -1,15 +1,25 @@
+use rand::Rng;
+use sha2::{Digest, Sha256};
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TokenHash(Vec<u8>);
 
 impl TokenHash {
+    pub fn generate() -> (Self, String) {
+        let mut bytes = [0u8; 32];
+        rand::rng().fill_bytes(&mut bytes);
+
+        let raw_hex = hex::encode(bytes);
+
+        let mut hasher = Sha256::new();
+        hasher.update(bytes);
+        let hash_result = hasher.finalize().to_vec();
+
+        (Self(hash_result), raw_hex)
+    }
+
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
-    }
-}
-
-impl From<Vec<u8>> for TokenHash {
-    fn from(value: Vec<u8>) -> Self {
-        Self(value)
     }
 }
 
