@@ -1,6 +1,6 @@
 pub mod models;
 
-pub use models::{email::Email, passwordhash::PasswordHash, user_id::UserId};
+pub use models::{email::Email, password_hash::PasswordHash, user_id::UserId};
 
 use crate::asset::AssetTimestamp;
 

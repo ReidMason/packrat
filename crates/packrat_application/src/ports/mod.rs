@@ -5,6 +5,8 @@ mod readiness_port;
 mod tenant_command_port;
 mod user_command_port;
 mod user_query_port;
+mod user_session_command_port;
+mod user_session_query_port;
 
 pub use asset_command_port::AssetCommandPort;
 pub use asset_query_port::AssetQueryPort;

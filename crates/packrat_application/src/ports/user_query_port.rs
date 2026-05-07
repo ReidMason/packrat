@@ -4,8 +4,19 @@ use packrat_domain::user::{Email, User, UserId};
 #[derive(Debug)]
 pub enum UserQueryError {
     NotFound,
-    Infrastructer(String),
+    Infrastructure(String),
 }
+
+impl std::fmt::Display for UserQueryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UserQueryError::NotFound => write!(f, "session not found"),
+            UserQueryError::Infrastructure(msg) => write!(f, "database error: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for UserQueryError {}
 
 #[async_trait]
 pub trait UserQueryPort: Send + Sync {
