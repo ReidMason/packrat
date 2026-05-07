@@ -30,6 +30,11 @@ impl PasswordHash {
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }
+
+    /// Use when created a PasswordHash from a String that is a password hash
+    pub fn from_hashed(hashed_password: &str) -> Self {
+        Self(hashed_password.to_string())
+    }
 }
 
 impl From<PasswordHash> for String {

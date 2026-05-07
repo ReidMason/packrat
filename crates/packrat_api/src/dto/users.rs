@@ -4,6 +4,7 @@ use serde::Serialize;
 #[derive(serde::Deserialize)]
 pub struct CreateUserDto {
     pub email: String,
+    pub password: String,
 }
 
 #[derive(Serialize)]

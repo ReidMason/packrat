@@ -5,7 +5,7 @@ use packrat_application::{
     AssetCommandPort, AssetSearchQuery, create_asset, get_asset, list_assets, list_child_assets,
     search_assets,
 };
-use packrat_domain::asset::{EntityId, EntityName};
+use packrat_domain::asset::{AssetId, AssetName};
 
 use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
 use crate::state::AppState;
@@ -14,7 +14,7 @@ pub async fn list_child_assets_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<SuccessBody<Vec<AssetDto>>> {
-    let entities = list_child_assets(state.query.as_ref(), EntityId::from(id)).await;
+    let entities = list_child_assets(state.query.as_ref(), AssetId::from(id)).await;
     Json(SuccessBody::new(
         entities.into_iter().map(AssetDto::from_entity).collect(),
     ))
@@ -71,8 +71,8 @@ pub async fn create_asset_handler(
     }
     let entity = create_asset(
         state.command.as_ref(),
-        EntityName::from(body.name),
-        body.parent_id.map(EntityId::from),
+        AssetName::from(body.name),
+        body.parent_id.map(AssetId::from),
     )
     .await;
     Ok((
@@ -85,7 +85,7 @@ pub async fn get_asset_handler(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<Json<SuccessBody<AssetDto>>, (StatusCode, Json<ErrorBody>)> {
-    match get_asset(state.query.as_ref(), EntityId::from(id)).await {
+    match get_asset(state.query.as_ref(), AssetId::from(id)).await {
         Some(e) => Ok(Json(SuccessBody::new(AssetDto::from_entity(e)))),
         None => Err((
             StatusCode::NOT_FOUND,
@@ -100,7 +100,7 @@ pub async fn delete_asset_handler(
 ) -> Result<StatusCode, (StatusCode, Json<ErrorBody>)> {
     state
         .command
-        .delete_asset(EntityId::from(id))
+        .delete_asset(AssetId::from(id))
         .await
         .map(|_| StatusCode::NO_CONTENT)
         .map_err(|e| {
