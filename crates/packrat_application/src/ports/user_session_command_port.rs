@@ -19,5 +19,5 @@ impl std::error::Error for UserSessionCommandError {}
 #[async_trait]
 pub trait UserSessionCommandPort: Send + Sync {
     async fn save(&self, session: UserSession) -> Result<(), UserSessionCommandError>;
-    async fn delete_by_hash(&self, hash: TokenHash) -> Result<(), UserSessionCommandError>;
+    async fn delete_by_token(&self, token: TokenHash) -> Result<(), UserSessionCommandError>;
 }

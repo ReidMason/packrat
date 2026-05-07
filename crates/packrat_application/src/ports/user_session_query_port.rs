@@ -20,8 +20,8 @@ impl std::error::Error for UserSessionQueryError {}
 
 #[async_trait]
 pub trait UserSessionQueryPort: Send + Sync {
-    async fn find_by_hash(
+    async fn get_by_token(
         &self,
-        hash: &TokenHash,
+        token: &TokenHash,
     ) -> Result<Option<UserSession>, UserSessionQueryError>;
 }
