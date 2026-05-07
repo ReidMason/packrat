@@ -4,19 +4,7 @@ use argon2::{PasswordHasher, PasswordVerifier};
 pub struct PasswordHash(String);
 
 impl PasswordHash {
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-
-    pub fn verify(&self, plain_password: &str) -> bool {
-        if let Ok(parsed_hash) = argon2::PasswordHash::new(&self.0) {
-            return argon2::Argon2::default()
-                .verify_password(plain_password.as_bytes(), &parsed_hash)
-                .is_ok();
-        }
-        false
-    }
-
+    /// Creates a hash from a given string
     pub fn generate(plain_password: &str) -> Result<Self, String> {
         let salt = argon2::password_hash::SaltString::generate(
             &mut argon2::password_hash::rand_core::OsRng,
@@ -29,22 +17,23 @@ impl PasswordHash {
 
         Ok(Self(hashed_string))
     }
-}
 
-impl From<String> for PasswordHash {
-    fn from(value: String) -> Self {
-        PasswordHash(value)
+    pub fn verify(&self, plain_password: &str) -> bool {
+        if let Ok(parsed_hash) = argon2::PasswordHash::new(&self.0) {
+            return argon2::Argon2::default()
+                .verify_password(plain_password.as_bytes(), &parsed_hash)
+                .is_ok();
+        }
+        false
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 
 impl From<PasswordHash> for String {
     fn from(value: PasswordHash) -> Self {
         value.0
-    }
-}
-
-impl From<&str> for PasswordHash {
-    fn from(value: &str) -> Self {
-        PasswordHash(value.to_string())
     }
 }
