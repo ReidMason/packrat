@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
-use packrat_domain::asset::EntityTimestamp;
-use packrat_domain::asset::{Asset, EntityId, EntityName};
 use packrat_domain::aggregates::partial_asset::PartialAsset;
+use packrat_domain::asset::{AssetId, AssetName, AssetTimestamp, Asset};
 use sqlx::PgPool;
 use sqlx::Row;
 use sqlx::postgres::PgPoolOptions;
@@ -19,8 +18,8 @@ impl PostgresAssetCommand {
 
 #[async_trait]
 impl AssetCommandPort for PostgresAssetCommand {
-    async fn create_asset(&self, name: EntityName, parent: Option<EntityId>) -> Asset {
-        let created = EntityTimestamp::now();
+    async fn create_asset(&self, name: AssetName, parent: Option<AssetId>) -> Asset {
+        let created = AssetTimestamp::now();
         let deleted = None;
         let id: i64 = sqlx::query_scalar!(
             "INSERT INTO assets (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
@@ -33,10 +32,10 @@ impl AssetCommandPort for PostgresAssetCommand {
         .await
         .expect("insert asset");
 
-        Asset::new(EntityId::from(id), name, parent, created, deleted)
+        Asset::new(AssetId::from(id), name, parent, created, deleted)
     }
 
-    async fn update_asset(&self, id: EntityId, changes: PartialAsset) -> Result<(), String> {
+    async fn update_asset(&self, id: AssetId, changes: PartialAsset) -> Result<(), String> {
         let current_row = sqlx::query!(
             "SELECT name, parent_id FROM assets WHERE id = $1 AND deleted IS NULL",
             i64::from(id)
@@ -73,7 +72,7 @@ impl AssetCommandPort for PostgresAssetCommand {
         Ok(())
     }
 
-    async fn delete_asset(&self, id: EntityId) -> Result<(), String> {
+    async fn delete_asset(&self, id: AssetId) -> Result<(), String> {
         let is_a_parent = sqlx::query_scalar!(
             "SELECT EXISTS (SELECT 1 FROM assets WHERE parent_id = $1 AND deleted IS NULL)",
             i64::from(id)
@@ -123,18 +122,18 @@ impl PostgresAssetQuery {
             .ok()?;
 
         Some(Asset::new(
-            EntityId::from(id),
-            EntityName::from(name),
-            parent_id.map(EntityId::from),
-            EntityTimestamp::from(created),
-            deleted.map(EntityTimestamp::from),
+            AssetId::from(id),
+            AssetName::from(name),
+            parent_id.map(AssetId::from),
+            AssetTimestamp::from(created),
+            deleted.map(AssetTimestamp::from),
         ))
     }
 }
 
 #[async_trait]
 impl AssetQueryPort for PostgresAssetQuery {
-    async fn get_asset_by_id(&self, id: EntityId) -> Option<Asset> {
+    async fn get_asset_by_id(&self, id: AssetId) -> Option<Asset> {
         let row =
             sqlx::query("SELECT id, name, parent_id, created, deleted FROM assets WHERE id = $1")
                 .bind(i64::from(id))
@@ -191,7 +190,7 @@ impl AssetQueryPort for PostgresAssetQuery {
             .collect()
     }
 
-    async fn list_child_assets(&self, parent_id: EntityId) -> Vec<Asset> {
+    async fn list_child_assets(&self, parent_id: AssetId) -> Vec<Asset> {
         let rows = sqlx::query(
             "SELECT id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND parent_id = $1 ORDER BY LOWER(name) ASC",
         )
@@ -227,17 +226,16 @@ pub async fn ping_database(pool: &PgPool) -> Result<(), sqlx::Error> {
 #[cfg(test)]
 mod postgres_tests {
     use super::*;
-    use packrat_domain::asset::EntityName;
     use sqlx::Row;
 
     #[sqlx::test]
     async fn test_delete_asset_errors_when_is_parent(pool: PgPool) {
         let command = PostgresAssetCommand::new(pool.clone());
 
-        let parent = command.create_asset(EntityName::from("Parent"), None).await;
+        let parent = command.create_asset(AssetName::from("Parent"), None).await;
 
         let _child = command
-            .create_asset(EntityName::from("Child"), Some(parent.id))
+            .create_asset(AssetName::from("Child"), Some(parent.id))
             .await;
 
         let result = command.delete_asset(parent.id).await;
@@ -261,7 +259,7 @@ mod postgres_tests {
     #[sqlx::test]
     async fn test_delete_non_existent_asset_returns_error(pool: PgPool) {
         let command = PostgresAssetCommand::new(pool);
-        let fake_id = EntityId::from(999);
+        let fake_id = AssetId::from(999);
 
         let result = command.delete_asset(fake_id).await;
 
@@ -272,7 +270,7 @@ mod postgres_tests {
     #[sqlx::test]
     async fn test_delete_asset_successfully(pool: PgPool) {
         let command = PostgresAssetCommand::new(pool.clone());
-        let asset = command.create_asset(EntityName::from("Target"), None).await;
+        let asset = command.create_asset(AssetName::from("Target"), None).await;
 
         let result = command.delete_asset(asset.id).await;
 
@@ -292,11 +290,11 @@ mod postgres_tests {
     async fn test_update_asset_name_only(pool: PgPool) {
         let command = PostgresAssetCommand::new(pool.clone());
         let asset = command
-            .create_asset(EntityName::from("Old Name"), None)
+            .create_asset(AssetName::from("Old Name"), None)
             .await;
 
         let changes = PartialAsset {
-            name: Some(EntityName::from("New Name")),
+            name: Some(AssetName::from("New Name")),
             parent: None, // No change to parent
         };
 

@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 
 use packrat_application::{UserCommandError, UserCommandPort};
-use packrat_domain::asset::EntityTimestamp;
+use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::user::{Email, User, UserId};
 
 pub struct PostgresUserCommand {
@@ -34,8 +34,8 @@ impl UserCommandPort for PostgresUserCommand {
             Ok(row) => Ok(User::new(
                 UserId::from(row.id),
                 Email::from(row.email),
-                EntityTimestamp::from(row.created),
-                EntityTimestamp::from(row.updated),
+                AssetTimestamp::from(row.created),
+                AssetTimestamp::from(row.updated),
             )),
             Err(e) => {
                 if let Some(db) = e.as_database_error() {

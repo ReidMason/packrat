@@ -23,16 +23,16 @@ pub use readiness::PostgresReadiness;
 
 use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
 use packrat_domain::{
-    asset::{Asset, EntityId, EntityName, EntityTimestamp},
+    asset::{Asset, AssetId, AssetName, AssetTimestamp},
     aggregates::partial_asset::PartialAsset,
 };
 
-fn stub_entity(id: EntityId) -> Asset {
+fn stub_entity(id: AssetId) -> Asset {
     Asset::new(
         id,
-        EntityName::from("from infrastructure stub"),
-        Some(EntityId::from(1)),
-        EntityTimestamp::now(),
+        AssetName::from("from infrastructure stub"),
+        Some(AssetId::from(1)),
+        AssetTimestamp::now(),
         None,
     )
 }
@@ -42,8 +42,8 @@ pub struct StubAssetQuery;
 
 #[async_trait]
 impl AssetQueryPort for StubAssetQuery {
-    async fn get_asset_by_id(&self, id: EntityId) -> Option<Asset> {
-        if id == EntityId::from(1) {
+    async fn get_asset_by_id(&self, id: AssetId) -> Option<Asset> {
+        if id == AssetId::from(1) {
             Some(stub_entity(id))
         } else {
             None
@@ -51,7 +51,7 @@ impl AssetQueryPort for StubAssetQuery {
     }
 
     async fn list_active_assets(&self) -> Vec<Asset> {
-        vec![stub_entity(EntityId::from(1))]
+        vec![stub_entity(AssetId::from(1))]
     }
 
     async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Asset> {
@@ -78,7 +78,7 @@ impl AssetQueryPort for StubAssetQuery {
             .collect()
     }
 
-    async fn list_child_assets(&self, parent_id: EntityId) -> Vec<Asset> {
+    async fn list_child_assets(&self, parent_id: AssetId) -> Vec<Asset> {
         self.list_active_assets()
             .await
             .into_iter()
@@ -103,17 +103,17 @@ impl Default for StubAssetCommand {
 
 #[async_trait]
 impl AssetCommandPort for StubAssetCommand {
-    async fn create_asset(&self, name: EntityName, parent: Option<EntityId>) -> Asset {
+    async fn create_asset(&self, name: AssetName, parent: Option<AssetId>) -> Asset {
         let id_raw = self.next_id.fetch_add(1, Ordering::Relaxed);
-        let id = EntityId::from(id_raw);
-        let entity = Asset::new(id, name, parent, EntityTimestamp::now(), None);
+        let id = AssetId::from(id_raw);
+        let entity = Asset::new(id, name, parent, AssetTimestamp::now(), None);
 
         let mut assets = self.assets.lock().unwrap();
         assets.insert(id_raw, entity.clone());
 
         entity
     }
-    async fn delete_asset(&self, id: EntityId) -> Result<(), String> {
+    async fn delete_asset(&self, id: AssetId) -> Result<(), String> {
         let mut assets = self.assets.lock().map_err(|_| "Poisoned lock")?;
         let id_raw = i64::from(id);
 
@@ -132,7 +132,7 @@ impl AssetCommandPort for StubAssetCommand {
             ))
         }
     }
-    async fn update_asset(&self, id: EntityId, changes: PartialAsset) -> Result<(), String> {
+    async fn update_asset(&self, id: AssetId, changes: PartialAsset) -> Result<(), String> {
         let mut storage = self.assets.lock().unwrap();
         let id_raw = i64::from(id);
 

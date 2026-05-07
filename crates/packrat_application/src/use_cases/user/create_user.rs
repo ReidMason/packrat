@@ -56,7 +56,7 @@ mod tests {
 
     fn some_user(email: Email) -> Option<User> {
         let id = UserId::from(1);
-        let password_hash = PasswordHash::from("test_password");
+        let password_hash = PasswordHash::generate("test_password").unwrap();
         let timestamp = AssetTimestamp::static_for_tests();
 
         let user = User::new(id, email, password_hash, timestamp, timestamp);
