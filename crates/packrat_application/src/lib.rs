@@ -3,7 +3,7 @@ pub mod use_cases;
 
 pub use ports::{
     AssetCommandPort, AssetQueryPort, AssetSearchQuery, ReadinessPort, TenantCommandError,
-    TenantCommandPort, UserCommandError, UserCommandPort,
+    TenantCommandPort, UserCommandError, UserCommandPort, UserQueryError, UserQueryPort
 };
 pub use use_cases::{
     check_readiness, create_asset, create_tenant, create_user, delete_asset, get_asset,

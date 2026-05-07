@@ -14,3 +14,4 @@ pub use asset_search_query::AssetSearchQuery;
 pub use readiness_port::ReadinessPort;
 pub use tenant_command_port::{TenantCommandError, TenantCommandPort};
 pub use user_command_port::{UserCommandError, UserCommandPort};
+pub use user_query_port::{UserQueryError, UserQueryPort};
