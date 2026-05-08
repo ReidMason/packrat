@@ -7,6 +7,6 @@ pub use ports::{
     UserSessionCommandError, UserSessionCommandPort, UserSessionQueryError, UserSessionQueryPort,
 };
 pub use use_cases::{
-    CreateUserUseCase, LoginUseCase, check_readiness, create_asset, create_tenant, delete_asset,
-    get_asset, list_assets, list_child_assets, search_assets, update_asset,
+    CreateUserUseCase, LoginResponse, LoginUseCase, check_readiness, create_asset, create_tenant,
+    delete_asset, get_asset, list_assets, list_child_assets, search_assets, update_asset,
 };

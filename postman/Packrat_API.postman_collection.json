@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-packrat-api",
     "name": "Packrat API",
-    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **GET /api/assets** — list active (non-deleted) assets.\n- **POST /api/assets/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/assets/:id/children** — active rows whose `parent_id` is that id.",
+    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **POST /api/login** — email/password; returns `user_id` and opaque `token` on success.\n- **GET /api/assets** — list active (non-deleted) assets.\n- **POST /api/assets/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/assets/:id/children** — active rows whose `parent_id` is that id.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -32,6 +32,30 @@
             "header": [],
             "url": "{{base_url}}/api/ready",
             "description": "Readiness probe: runs `SELECT 1` on Postgres. 200 with `{ \"data\": { \"status\": \"ready\", \"database\": \"ok\" } }` when DB is up; 503 with standard error JSON if the database is unreachable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"password\": \"your-password\"\n}"
+            },
+            "url": "{{base_url}}/api/login",
+            "description": "200: `{ \"data\": { \"user_id\": number, \"token\": \"hex...\" } }`. 401 for wrong email/password (same message). 400 if email or password empty. Persists a session row."
           },
           "response": []
         }

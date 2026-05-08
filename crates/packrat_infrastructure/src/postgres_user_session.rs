@@ -10,6 +10,7 @@ use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::aggregates::user_session::{TokenHash, UserSession};
 use packrat_domain::user::UserId;
 
+#[derive(Clone)]
 pub struct PostgresUserSessionCommand {
     pool: PgPool,
 }
@@ -70,6 +71,7 @@ impl UserSessionCommandPort for PostgresUserSessionCommand {
     }
 }
 
+#[derive(Clone)]
 pub struct PostgresUserSessionQuery {
     pool: PgPool,
 }

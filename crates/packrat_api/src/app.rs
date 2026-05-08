@@ -8,6 +8,7 @@ use crate::handlers::assets::{
     create_asset_handler, delete_asset_handler, get_asset_handler, list_assets_handler,
     list_child_assets_handler, search_assets_handler,
 };
+use crate::handlers::auth::login_handler;
 use crate::handlers::health::health_handler;
 use crate::handlers::ready::ready_handler;
 use crate::handlers::tenants::create_tenant_handler;
@@ -20,6 +21,7 @@ fn api_router(state: AppState) -> Router {
         .route("/health", get(health_handler))
         .route("/ready", get(ready_handler))
         .route("/users", post(create_user_handler))
+        .route("/login", post(login_handler))
         .route("/tenants", post(create_tenant_handler))
         .route("/assets/search", post(search_assets_handler))
         .route(

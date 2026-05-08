@@ -9,4 +9,4 @@ pub use asset::{
 };
 pub use health::check_readiness;
 pub use tenant::create_tenant;
-pub use user::{CreateUserUseCase, LoginUseCase};
+pub use user::{CreateUserUseCase, LoginResponse, LoginUseCase};

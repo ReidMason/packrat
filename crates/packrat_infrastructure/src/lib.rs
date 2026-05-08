@@ -19,7 +19,7 @@ pub use postgres::{
     PostgresAssetCommand, PostgresAssetQuery, connect_pool, ping_database, run_migrations,
 };
 pub use postgres_tenant::PostgresTenantCommand;
-pub use postgres_user::PostgresUserCommand;
+pub use postgres_user::{PostgresUserCommand, PostgresUserQuery};
 pub use postgres_user_session::{PostgresUserSessionCommand, PostgresUserSessionQuery};
 pub use readiness::PostgresReadiness;
 
