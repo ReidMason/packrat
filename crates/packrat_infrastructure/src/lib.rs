@@ -20,7 +20,7 @@ pub use postgres::{
 };
 pub use postgres_tenant::PostgresTenantCommand;
 pub use postgres_user::PostgresUserCommand;
-pub use postgres_user_session::PostgresUserSessionCommand;
+pub use postgres_user_session::{PostgresUserSessionCommand, PostgresUserSessionQuery};
 pub use readiness::PostgresReadiness;
 
 use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};

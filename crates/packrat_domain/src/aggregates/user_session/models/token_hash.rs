@@ -21,6 +21,13 @@ impl TokenHash {
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
+
+    pub fn from_sha256_digest(bytes: Vec<u8>) -> Option<Self> {
+        if bytes.len() != 32 {
+            return None;
+        }
+        Some(Self(bytes))
+    }
 }
 
 impl From<TokenHash> for Vec<u8> {
