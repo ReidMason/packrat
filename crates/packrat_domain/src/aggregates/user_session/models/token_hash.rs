@@ -28,6 +28,16 @@ impl TokenHash {
         }
         Some(Self(bytes))
     }
+
+    pub fn from_login_token_hex(token: &str) -> Option<Self> {
+        let bytes = hex::decode(token.trim()).ok()?;
+        if bytes.len() != 32 {
+            return None;
+        }
+        let mut hasher = Sha256::new();
+        hasher.update(&bytes);
+        Self::from_sha256_digest(hasher.finalize().to_vec())
+    }
 }
 
 impl From<TokenHash> for Vec<u8> {
