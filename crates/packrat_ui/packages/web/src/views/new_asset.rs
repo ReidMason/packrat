@@ -7,6 +7,7 @@ use crate::Route;
 #[component]
 pub fn NewAsset() -> Element {
     let api_base = use_context::<Signal<String>>();
+    let auth_token = use_context::<Signal<Option<String>>>();
     let recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut name = use_signal(String::new);
@@ -19,7 +20,8 @@ pub fn NewAsset() -> Element {
     let assets = use_resource(move || {
         let _ = list_gen();
         let base = api_base();
-        async move { api_client::list_assets(&base).await }
+        let token = auth_token();
+        async move { api_client::list_assets(&base, token.as_deref()).await }
     });
 
     rsx! {
@@ -99,10 +101,13 @@ pub fn NewAsset() -> Element {
                                 },
                             };
                             let recent_sig = recent;
+                            let token = auth_token();
                             busy.set(true);
                             flash.set(None);
                             spawn(async move {
-                                match api_client::create_asset(&base, n, parent_id).await {
+                                match api_client::create_asset(&base, n, parent_id, token.as_deref())
+                                    .await
+                                {
                                     Ok(asset) => {
                                         remember_recent(recent_sig, asset.id, asset.name.clone());
                                         flash.set(Some(format!("Created “{}”.", asset.name)));

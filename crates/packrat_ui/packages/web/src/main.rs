@@ -44,8 +44,10 @@ fn App() -> Element {
 fn AppShell() -> Element {
     let api_base = use_signal(crate::api_base::initial_api_base);
     let recent = use_signal(|| recent_store::load_recent_disk());
+    let auth_token = use_signal(|| None::<String>);
     use_context_provider(|| api_base);
     use_context_provider(|| recent);
+    use_context_provider(|| auth_token);
 
     rsx! {
         div {

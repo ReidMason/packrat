@@ -1,5 +1,15 @@
 //! HTTP client for the Packrat Axum API (`/api/*`).
+use reqwest::header::AUTHORIZATION;
+use reqwest::RequestBuilder;
 use serde::{Deserialize, Serialize};
+
+fn with_bearer(req: RequestBuilder, token: Option<&str>) -> RequestBuilder {
+    if let Some(t) = token.map(str::trim).filter(|s| !s.is_empty()) {
+        req.header(AUTHORIZATION, format!("Bearer {t}"))
+    } else {
+        req
+    }
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SuccessBody<T> {
@@ -50,6 +60,12 @@ pub struct TenantDto {
     pub name: String,
     pub created: String,
     pub updated: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct LoginDto {
+    pub user_id: i64,
+    pub token: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -163,7 +179,11 @@ struct SearchAssetsRequest {
     fuzzyname: Option<String>,
 }
 
-pub async fn search_assets(base: &str, fuzzyname: &str) -> Result<Vec<AssetDto>, String> {
+pub async fn search_assets(
+    base: &str,
+    fuzzyname: &str,
+    token: Option<&str>,
+) -> Result<Vec<AssetDto>, String> {
     let needle = fuzzyname.trim();
     if needle.is_empty() {
         return Err("Search text must not be empty.".into());
@@ -173,9 +193,7 @@ pub async fn search_assets(base: &str, fuzzyname: &str) -> Result<Vec<AssetDto>,
         name: None,
         fuzzyname: Some(needle.to_string()),
     };
-    let resp = reqwest::Client::new()
-        .post(&url)
-        .json(&body)
+    let resp = with_bearer(reqwest::Client::new().post(&url).json(&body), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -186,10 +204,9 @@ pub async fn search_assets(base: &str, fuzzyname: &str) -> Result<Vec<AssetDto>,
     Ok(wrapped.data)
 }
 
-pub async fn list_assets(base: &str) -> Result<Vec<AssetDto>, String> {
+pub async fn list_assets(base: &str, token: Option<&str>) -> Result<Vec<AssetDto>, String> {
     let url = format!("{}/api/assets", http_base(base));
-    let resp = reqwest::Client::new()
-        .get(&url)
+    let resp = with_bearer(reqwest::Client::new().get(&url), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -200,10 +217,9 @@ pub async fn list_assets(base: &str) -> Result<Vec<AssetDto>, String> {
     Ok(body.data)
 }
 
-pub async fn get_asset(base: &str, id: i64) -> Result<AssetDto, String> {
+pub async fn get_asset(base: &str, id: i64, token: Option<&str>) -> Result<AssetDto, String> {
     let url = format!("{}/api/assets/{id}", http_base(base));
-    let resp = reqwest::Client::new()
-        .get(&url)
+    let resp = with_bearer(reqwest::Client::new().get(&url), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -214,10 +230,13 @@ pub async fn get_asset(base: &str, id: i64) -> Result<AssetDto, String> {
     Ok(body.data)
 }
 
-pub async fn list_child_assets(base: &str, parent_id: i64) -> Result<Vec<AssetDto>, String> {
+pub async fn list_child_assets(
+    base: &str,
+    parent_id: i64,
+    token: Option<&str>,
+) -> Result<Vec<AssetDto>, String> {
     let url = format!("{}/api/assets/{parent_id}/children", http_base(base));
-    let resp = reqwest::Client::new()
-        .get(&url)
+    let resp = with_bearer(reqwest::Client::new().get(&url), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -232,12 +251,11 @@ pub async fn create_asset(
     base: &str,
     name: String,
     parent_id: Option<i64>,
+    token: Option<&str>,
 ) -> Result<AssetDto, String> {
     let url = format!("{}/api/assets", http_base(base));
     let body = CreateAssetRequest { name, parent_id };
-    let resp = reqwest::Client::new()
-        .post(&url)
-        .json(&body)
+    let resp = with_bearer(reqwest::Client::new().post(&url).json(&body), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -248,10 +266,9 @@ pub async fn create_asset(
     Ok(wrapped.data)
 }
 
-pub async fn delete_asset(base: &str, id: i64) -> Result<(), String> {
+pub async fn delete_asset(base: &str, id: i64, token: Option<&str>) -> Result<(), String> {
     let url = format!("{}/api/assets/{id}", http_base(base));
-    let resp = reqwest::Client::new()
-        .delete(&url)
+    let resp = with_bearer(reqwest::Client::new().delete(&url), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -267,6 +284,13 @@ pub async fn delete_asset(base: &str, id: i64) -> Result<(), String> {
 #[derive(Debug, Serialize)]
 struct CreateUserRequest {
     email: String,
+    password: String,
+}
+
+#[derive(Debug, Serialize)]
+struct LoginRequest {
+    email: String,
+    password: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -274,9 +298,13 @@ struct CreateTenantRequest {
     name: String,
 }
 
-pub async fn create_user(base: &str, email: String) -> Result<UserDto, String> {
+pub async fn create_user(
+    base: &str,
+    email: String,
+    password: String,
+) -> Result<UserDto, String> {
     let url = format!("{}/api/users", http_base(base));
-    let body = CreateUserRequest { email };
+    let body = CreateUserRequest { email, password };
     let resp = reqwest::Client::new()
         .post(&url)
         .json(&body)
@@ -290,12 +318,30 @@ pub async fn create_user(base: &str, email: String) -> Result<UserDto, String> {
     Ok(wrapped.data)
 }
 
-pub async fn create_tenant(base: &str, name: String) -> Result<TenantDto, String> {
-    let url = format!("{}/api/tenants", http_base(base));
-    let body = CreateTenantRequest { name };
+pub async fn login(base: &str, email: String, password: String) -> Result<LoginDto, String> {
+    let url = format!("{}/api/login", http_base(base));
+    let body = LoginRequest { email, password };
     let resp = reqwest::Client::new()
         .post(&url)
         .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let wrapped: SuccessBody<LoginDto> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(wrapped.data)
+}
+
+pub async fn create_tenant(
+    base: &str,
+    name: String,
+    token: Option<&str>,
+) -> Result<TenantDto, String> {
+    let url = format!("{}/api/tenants", http_base(base));
+    let body = CreateTenantRequest { name };
+    let resp = with_bearer(reqwest::Client::new().post(&url).json(&body), token)
         .send()
         .await
         .map_err(|e| e.to_string())?;

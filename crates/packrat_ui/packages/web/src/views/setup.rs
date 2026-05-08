@@ -14,20 +14,63 @@ enum SetupPhase {
 fn spawn_create_user(
     base: String,
     email: String,
+    password: String,
     mut busy: Signal<bool>,
     mut result: Signal<Option<Result<UserDto, String>>>,
     mut phase: Signal<SetupPhase>,
     mut registered_user: Signal<Option<UserDto>>,
+    mut auth_token: Signal<Option<String>>,
 ) {
     busy.set(true);
     spawn(async move {
-        let res = api_client::create_user(&base, email).await;
-        if let Ok(ref user) = res {
-            registered_user.set(Some(user.clone()));
-            phase.set(SetupPhase::RegisterWorkspace);
-            result.set(None);
-        } else {
-            result.set(Some(res));
+        let res = api_client::create_user(&base, email.clone(), password.clone()).await;
+        match res {
+            Ok(user) => {
+                match api_client::login(&base, email, password).await {
+                    Ok(login) => {
+                        *auth_token.write() = Some(login.token);
+                        registered_user.set(Some(user.clone()));
+                        phase.set(SetupPhase::RegisterWorkspace);
+                        result.set(None);
+                    }
+                    Err(e) => {
+                        result.set(Some(Err(format!(
+                            "Account created but sign-in failed: {e}"
+                        ))));
+                    }
+                }
+            }
+            Err(e) => result.set(Some(Err(e))),
+        }
+        busy.set(false);
+    });
+}
+
+fn spawn_login(
+    base: String,
+    email: String,
+    password: String,
+    mut busy: Signal<bool>,
+    mut result: Signal<Option<Result<(), String>>>,
+    mut auth_token: Signal<Option<String>>,
+    mut phase: Signal<SetupPhase>,
+    mut registered_user: Signal<Option<UserDto>>,
+    mut tenant_name: Signal<String>,
+    mut tenant_result: Signal<Option<Result<TenantDto, String>>>,
+) {
+    busy.set(true);
+    result.set(None);
+    spawn(async move {
+        match api_client::login(&base, email, password).await {
+            Ok(d) => {
+                *auth_token.write() = Some(d.token);
+                registered_user.set(None);
+                tenant_name.set(String::new());
+                tenant_result.set(None);
+                phase.set(SetupPhase::RegisterWorkspace);
+                result.set(Some(Ok(())));
+            }
+            Err(e) => result.set(Some(Err(e))),
         }
         busy.set(false);
     });
@@ -36,12 +79,13 @@ fn spawn_create_user(
 fn spawn_create_tenant(
     base: String,
     name: String,
+    token: Option<String>,
     mut busy: Signal<bool>,
     mut result: Signal<Option<Result<TenantDto, String>>>,
 ) {
     busy.set(true);
     spawn(async move {
-        let res = api_client::create_tenant(&base, name).await;
+        let res = api_client::create_tenant(&base, name, token.as_deref()).await;
         result.set(Some(res));
         busy.set(false);
     });
@@ -50,29 +94,38 @@ fn spawn_create_tenant(
 fn reset_registration(
     mut phase: Signal<SetupPhase>,
     mut user_email: Signal<String>,
+    mut user_password: Signal<String>,
     mut user_result: Signal<Option<Result<UserDto, String>>>,
     mut tenant_name: Signal<String>,
     mut tenant_result: Signal<Option<Result<TenantDto, String>>>,
     mut registered_user: Signal<Option<UserDto>>,
+    mut auth_token: Signal<Option<String>>,
 ) {
     phase.set(SetupPhase::Choose);
     user_email.set(String::new());
+    user_password.set(String::new());
     user_result.set(None);
     tenant_name.set(String::new());
     tenant_result.set(None);
     registered_user.set(None);
+    auth_token.set(None);
 }
 
 /// Onboarding: sign in (placeholder) or register → account email → workspace (tenant).
 #[component]
 pub fn Setup() -> Element {
     let api_base = use_context::<Signal<String>>();
+    let auth_token = use_context::<Signal<Option<String>>>();
 
     let mut phase = use_signal(|| SetupPhase::Choose);
 
     let mut signin_email = use_signal(String::new);
+    let mut signin_password = use_signal(String::new);
+    let signin_busy = use_signal(|| false);
+    let mut signin_result = use_signal(|| Option::<Result<(), String>>::None);
 
     let mut user_email = use_signal(String::new);
+    let mut user_password = use_signal(String::new);
     let user_busy = use_signal(|| false);
     let mut user_result = use_signal(|| Option::<Result<UserDto, String>>::None);
     let mut registered_user = use_signal(|| Option::<UserDto>::None);
@@ -100,18 +153,21 @@ pub fn Setup() -> Element {
                             class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 text-left shadow-sm hover:border-ui-secondary/40 transition-colors",
                             onclick: move |_| {
                                 signin_email.set(String::new());
+                                signin_password.set(String::new());
+                                signin_result.set(None);
                                 phase.set(SetupPhase::SignIn);
                             },
                             p { class: "text-xs font-medium uppercase tracking-wide text-ui-text-muted", "Returning" }
                             p { class: "mt-2 text-lg font-semibold text-ui-text", "Sign in" }
                             p { class: "mt-2 text-sm text-ui-text-muted leading-snug",
-                                "Use your existing account. Password auth is not connected yet — this step is a preview."
+                                "Use your email and password. You will create or open a workspace next."
                             }
                         }
                         button {
                             class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 text-left shadow-sm hover:border-ui-primary/50 transition-colors ring-1 ring-ui-primary/20",
                             onclick: move |_| {
                                 user_email.set(String::new());
+                                user_password.set(String::new());
                                 user_result.set(None);
                                 tenant_name.set(String::new());
                                 tenant_result.set(None);
@@ -130,14 +186,17 @@ pub fn Setup() -> Element {
                     div { class: "space-y-6",
                         button {
                             class: "text-sm text-ui-text-muted hover:text-ui-text",
-                            onclick: move |_| phase.set(SetupPhase::Choose),
+                            onclick: move |_| {
+                                signin_result.set(None);
+                                phase.set(SetupPhase::Choose);
+                            },
                             "← Back"
                         }
                         div {
                             class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 space-y-4",
                             h2 { class: "text-lg font-medium text-ui-text", "Sign in" }
                             p { class: "text-sm text-ui-text-muted",
-                                "The API does not authenticate passwords yet. When it does, this form will talk to your session endpoint."
+                                "Use the same credentials as the Packrat API. After sign-in you can create a workspace if you do not have one yet."
                             }
                             div {
                                 class: "space-y-3",
@@ -156,17 +215,51 @@ pub fn Setup() -> Element {
                                     class: "flex flex-col gap-1 text-sm text-ui-text-muted",
                                     span { "Password" }
                                     input {
-                                        class: "bg-ui-bg-dim/60 border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text-muted cursor-not-allowed",
+                                        class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
                                         r#type: "password",
-                                        placeholder: "Not available yet",
-                                        disabled: true,
+                                        placeholder: "Your password",
+                                        value: "{signin_password}",
+                                        oninput: move |e| *signin_password.write() = e.value(),
                                     }
+                                }
+                                if let Some(Err(ref e)) = signin_result() {
+                                    p { class: "text-sm text-ui-error", "{e}" }
+                                }
+                                if let Some(Ok(())) = signin_result() {
+                                    p { class: "text-sm text-ui-success", "Signed in. Continue below to name a workspace." }
                                 }
                                 button {
                                     r#type: "button",
-                                    class: "w-full rounded-lg bg-ui-bg-dim text-ui-text-muted px-4 py-2.5 text-sm font-medium cursor-not-allowed",
-                                    disabled: true,
-                                    "Sign in (coming soon)"
+                                    class: "w-full rounded-lg bg-ui-secondary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50",
+                                    disabled: signin_busy(),
+                                    onclick: move |_| {
+                                        if signin_busy() {
+                                            return;
+                                        }
+                                        let email = signin_email().trim().to_string();
+                                        let password = signin_password();
+                                        if email.is_empty() || !email.contains('@') {
+                                            signin_result.set(Some(Err("Enter a valid email.".into())));
+                                            return;
+                                        }
+                                        if password.len() < 8 {
+                                            signin_result.set(Some(Err("Password must be at least 8 characters.".into())));
+                                            return;
+                                        }
+                                        spawn_login(
+                                            api_base(),
+                                            email,
+                                            password,
+                                            signin_busy,
+                                            signin_result,
+                                            auth_token,
+                                            phase,
+                                            registered_user,
+                                            tenant_name,
+                                            tenant_result,
+                                        );
+                                    },
+                                    if signin_busy() { "Signing in…" } else { "Sign in" }
                                 }
                             }
                         }
@@ -180,10 +273,12 @@ pub fn Setup() -> Element {
                                 reset_registration(
                                     phase,
                                     user_email,
+                                    user_password,
                                     user_result,
                                     tenant_name,
                                     tenant_result,
                                     registered_user,
+                                    auth_token,
                                 );
                             },
                             "← Back"
@@ -192,7 +287,7 @@ pub fn Setup() -> Element {
                             class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 space-y-4",
                             h2 { class: "text-lg font-medium text-ui-text", "Create your account" }
                             p { class: "text-sm text-ui-text-muted",
-                                "We only need your email for now. Next you will create a workspace."
+                                "Email and password are sent to the API (TLS in production). Next you will name your first workspace."
                             }
                             form {
                                 class: "space-y-4",
@@ -202,18 +297,25 @@ pub fn Setup() -> Element {
                                         return;
                                     }
                                     let email = user_email().trim().to_string();
+                                    let password = user_password();
                                     if email.is_empty() || !email.contains('@') {
                                         user_result.set(Some(Err("Enter a valid email.".into())));
+                                        return;
+                                    }
+                                    if password.len() < 8 {
+                                        user_result.set(Some(Err("Password must be at least 8 characters.".into())));
                                         return;
                                     }
                                     user_result.set(None);
                                     spawn_create_user(
                                         api_base(),
                                         email,
+                                        password,
                                         user_busy,
                                         user_result,
                                         phase,
                                         registered_user,
+                                        auth_token,
                                     );
                                 },
                                 label {
@@ -225,6 +327,17 @@ pub fn Setup() -> Element {
                                         placeholder: "you@example.com",
                                         value: "{user_email}",
                                         oninput: move |e| *user_email.write() = e.value(),
+                                    }
+                                }
+                                label {
+                                    class: "flex flex-col gap-1 text-sm text-ui-text-muted",
+                                    span { "Password" }
+                                    input {
+                                        class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
+                                        r#type: "password",
+                                        placeholder: "At least 8 characters",
+                                        value: "{user_password}",
+                                        oninput: move |e| *user_password.write() = e.value(),
                                     }
                                 }
                                 if let Some(Err(ref e)) = user_result() {
@@ -249,12 +362,13 @@ pub fn Setup() -> Element {
                                     user_email.set(u.email.clone());
                                 }
                                 registered_user.set(None);
+                                user_password.set(String::new());
                                 phase.set(SetupPhase::RegisterEmail);
                                 tenant_name.set(String::new());
                                 tenant_result.set(None);
                                 user_result.set(None);
                             },
-                            "← Change email"
+                            "← Change account"
                         }
                         div {
                             class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 space-y-4",
@@ -269,9 +383,15 @@ pub fn Setup() -> Element {
                             if tenant_result().as_ref().and_then(|r| r.as_ref().ok()).is_some() {
                                 div { class: "rounded-lg border border-ui-success/40 bg-ui-success/10 p-4 space-y-3",
                                     p { class: "text-sm font-medium text-ui-success", "You are set up." }
-                                    if let (Some(Ok(t)), Some(u)) = (tenant_result(), registered_user()) {
-                                        p { class: "text-sm text-ui-text-muted",
-                                            "Workspace “{t.name}” is ready. Signed in as {u.email} (session not stored in browser yet)."
+                                    if let Some(Ok(ref t)) = tenant_result() {
+                                        if let Some(ref u) = registered_user() {
+                                            p { class: "text-sm text-ui-text-muted",
+                                                "Workspace “{t.name}” is ready. Signed in as {u.email}. Your session is stored in this browser for API calls."
+                                            }
+                                        } else {
+                                            p { class: "text-sm text-ui-text-muted",
+                                                "Workspace “{t.name}” is ready."
+                                            }
                                         }
                                     }
                                     Link {
@@ -293,10 +413,17 @@ pub fn Setup() -> Element {
                                             tenant_result.set(Some(Err("Name must not be empty.".into())));
                                             return;
                                         }
+                                        if auth_token().is_none() {
+                                            tenant_result.set(Some(Err(
+                                                "Not signed in. Go back and sign in again.".into(),
+                                            )));
+                                            return;
+                                        }
                                         tenant_result.set(None);
                                         spawn_create_tenant(
                                             api_base(),
                                             name,
+                                            auth_token(),
                                             tenant_busy,
                                             tenant_result,
                                         );

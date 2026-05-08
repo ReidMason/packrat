@@ -7,6 +7,7 @@ use crate::Route;
 fn spawn_search(
     base: String,
     query: String,
+    token: Option<String>,
     mut search_busy: Signal<bool>,
     mut search_results: Signal<Option<Result<Vec<AssetDto>, String>>>,
     recent: Signal<Vec<RecentBrief>>,
@@ -16,7 +17,7 @@ fn spawn_search(
         let res = if query.trim().is_empty() {
             Err("Enter a search term.".into())
         } else {
-            api_client::search_assets(&base, &query).await
+            api_client::search_assets(&base, &query, token.as_deref()).await
         };
         if let Ok(ref list) = res {
             if let Some(asset) = list.first() {
@@ -31,6 +32,7 @@ fn spawn_search(
 #[component]
 pub fn Dashboard() -> Element {
     let api_base = use_context::<Signal<String>>();
+    let auth_token = use_context::<Signal<Option<String>>>();
     let mut recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut search_term = use_signal(String::new);
@@ -71,10 +73,12 @@ pub fn Dashboard() -> Element {
                                 return;
                             }
                             let base = api_base();
+                            let token = auth_token();
                             let q = search_term().trim().to_string();
                             spawn_search(
                                 base,
                                 q,
+                                token,
                                 search_busy,
                                 search_results,
                                 recent,

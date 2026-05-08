@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use packrat_application::{
     AssetCommandPort, AssetSearchQuery, create_asset, get_asset, list_assets, list_child_assets,
@@ -8,12 +8,15 @@ use packrat_application::{
 use packrat_domain::asset::{AssetId, AssetName};
 
 use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
+use crate::middleware::AuthSession;
 use crate::state::AppState;
 
 pub async fn list_child_assets_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
     Path(id): Path<i64>,
 ) -> Json<SuccessBody<Vec<AssetDto>>> {
+    let _ = session.user_id;
     let entities = list_child_assets(state.query.as_ref(), AssetId::from(id)).await;
     Json(SuccessBody::new(
         entities.into_iter().map(AssetDto::from_entity).collect(),
@@ -22,8 +25,10 @@ pub async fn list_child_assets_handler(
 
 pub async fn search_assets_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
     Json(body): Json<SearchAssetsDto>,
 ) -> Result<Json<SuccessBody<Vec<AssetDto>>>, (StatusCode, Json<ErrorBody>)> {
+    let _ = session.user_id;
     let name = body
         .name
         .as_ref()
@@ -53,7 +58,9 @@ pub async fn search_assets_handler(
 
 pub async fn list_assets_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
 ) -> Json<SuccessBody<Vec<AssetDto>>> {
+    let _ = session.user_id;
     let entities = list_assets(state.query.as_ref()).await;
     let dtos: Vec<AssetDto> = entities.into_iter().map(AssetDto::from_entity).collect();
     Json(SuccessBody::new(dtos))
@@ -61,8 +68,10 @@ pub async fn list_assets_handler(
 
 pub async fn create_asset_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
     Json(body): Json<CreateAssetDto>,
 ) -> Result<(StatusCode, Json<SuccessBody<AssetDto>>), (StatusCode, Json<ErrorBody>)> {
+    let _ = session.user_id;
     if body.name.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -83,8 +92,10 @@ pub async fn create_asset_handler(
 
 pub async fn get_asset_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
     Path(id): Path<i64>,
 ) -> Result<Json<SuccessBody<AssetDto>>, (StatusCode, Json<ErrorBody>)> {
+    let _ = session.user_id;
     match get_asset(state.query.as_ref(), AssetId::from(id)).await {
         Some(e) => Ok(Json(SuccessBody::new(AssetDto::from_entity(e)))),
         None => Err((
@@ -96,8 +107,10 @@ pub async fn get_asset_handler(
 
 pub async fn delete_asset_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorBody>)> {
+    let _ = session.user_id;
     state
         .command
         .delete_asset(AssetId::from(id))

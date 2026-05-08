@@ -13,11 +13,13 @@ pub fn AssetDetail(id: i64) -> Element {
     let _ = use_route::<Route>();
 
     let api_base = use_context::<Signal<String>>();
+    let auth_token = use_context::<Signal<Option<String>>>();
     let recent = use_context::<Signal<Vec<RecentBrief>>>();
     let navigator = use_navigator();
 
     let detail_res = use_resource(move || {
         let api_base_sig = api_base;
+        let token_sig = auth_token;
         async move {
             let router = try_router().ok_or_else(|| "router unavailable".to_string())?;
             let asset_id = match router.current::<Route>() {
@@ -25,8 +27,10 @@ pub fn AssetDetail(id: i64) -> Element {
                 _ => return Err("unexpected route".into()),
             };
             let base = api_base_sig();
-            let asset = api_client::get_asset(&base, asset_id).await?;
-            let children = api_client::list_child_assets(&base, asset_id).await?;
+            let token = token_sig();
+            let asset = api_client::get_asset(&base, asset_id, token.as_deref()).await?;
+            let children =
+                api_client::list_child_assets(&base, asset_id, token.as_deref()).await?;
             Ok::<(AssetDto, Vec<AssetDto>), String>((asset, children))
         }
     });
@@ -137,12 +141,15 @@ pub fn AssetDetail(id: i64) -> Element {
                                             disabled: delete_busy(),
                                             onclick: move |_| {
                                                 let base = api_base();
+                                                let token = auth_token();
                                                 let nav = navigator;
                                                 let rec = recent;
                                                 delete_busy.set(true);
                                                 delete_msg.set(None);
                                                 spawn(async move {
-                                                    match api_client::delete_asset(&base, asset_id).await {
+                                                    match api_client::delete_asset(&base, asset_id, token.as_deref())
+                                                        .await
+                                                    {
                                                         Ok(()) => {
                                                             recent_store::remove_recent(rec, asset_id);
                                                             nav.push(Route::Home {});

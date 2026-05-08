@@ -1,16 +1,19 @@
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Extension, State};
 use axum::http::StatusCode;
 use packrat_application::{TenantCommandError, create_tenant};
 use packrat_domain::tenant::TenantName;
 
 use crate::dto::{CreateTenantDto, ErrorBody, SuccessBody, TenantDto};
+use crate::middleware::AuthSession;
 use crate::state::AppState;
 
 pub async fn create_tenant_handler(
     State(state): State<AppState>,
+    Extension(session): Extension<AuthSession>,
     Json(body): Json<CreateTenantDto>,
 ) -> Result<(StatusCode, Json<SuccessBody<TenantDto>>), (StatusCode, Json<ErrorBody>)> {
+    let _ = session.user_id;
     let name = body.name.trim();
     if name.is_empty() {
         return Err((

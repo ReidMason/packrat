@@ -45,3 +45,15 @@ impl From<TokenHash> for Vec<u8> {
         value.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::TokenHash;
+
+    #[test]
+    fn from_login_token_hex_matches_generate() {
+        let (stored, hex) = TokenHash::generate();
+        let decoded = TokenHash::from_login_token_hex(&hex).expect("valid hex");
+        assert_eq!(decoded, stored);
+    }
+}
