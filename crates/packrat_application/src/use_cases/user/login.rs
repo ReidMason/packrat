@@ -116,6 +116,12 @@ mod tests {
         async fn delete_by_token(&self, _hash: TokenHash) -> Result<(), UserSessionCommandError> {
             Ok(())
         }
+        async fn delete_all_for_user(
+            &self,
+            _user_id: UserId,
+        ) -> Result<(), UserSessionCommandError> {
+            Ok(())
+        }
     }
 
     #[tokio::test]

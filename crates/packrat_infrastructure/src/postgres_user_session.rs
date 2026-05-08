@@ -58,6 +58,16 @@ impl UserSessionCommandPort for PostgresUserSessionCommand {
 
         Ok(())
     }
+
+    async fn delete_all_for_user(&self, user_id: UserId) -> Result<(), UserSessionCommandError> {
+        let id = i64::from(user_id);
+        sqlx::query(r#"DELETE FROM sessions WHERE user_id = $1"#)
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| UserSessionCommandError::Persist(e.to_string()))?;
+        Ok(())
+    }
 }
 
 pub struct PostgresUserSessionQuery {
@@ -127,7 +137,7 @@ impl UserSessionQueryPort for PostgresUserSessionQuery {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use packrat_application::{UserCommandPort, UserSessionQueryPort};
+    use packrat_application::{UserCommandPort, UserSessionCommandPort, UserSessionQueryPort};
     use packrat_domain::user::{Email, PasswordHash};
     use sqlx::Row;
 
@@ -323,5 +333,65 @@ mod tests {
             .await
             .unwrap()
             .is_none());
+    }
+
+    #[sqlx::test]
+    async fn delete_all_for_user_removes_only_that_users_sessions(pool: PgPool) {
+        let cmd = PostgresUserCommand::new(pool.clone());
+        let user_a = cmd
+            .create_user(
+                Email::from("logout-all-a@example.com"),
+                PasswordHash::generate("pw").unwrap(),
+            )
+            .await
+            .unwrap();
+        let user_b = cmd
+            .create_user(
+                Email::from("logout-all-b@example.com"),
+                PasswordHash::generate("pw").unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let (hash_a1, _) = TokenHash::generate();
+        let (hash_a2, _) = TokenHash::generate();
+        let (hash_b1, _) = TokenHash::generate();
+
+        let write = PostgresUserSessionCommand::new(pool.clone());
+        write
+            .save(UserSession::new(hash_a1.clone(), user_a.id, 24))
+            .await
+            .unwrap();
+        write
+            .save(UserSession::new(hash_a2.clone(), user_a.id, 24))
+            .await
+            .unwrap();
+        write
+            .save(UserSession::new(hash_b1.clone(), user_b.id, 24))
+            .await
+            .unwrap();
+
+        write
+            .delete_all_for_user(user_a.id)
+            .await
+            .unwrap();
+
+        let read = PostgresUserSessionQuery::new(pool.clone());
+        assert!(read.get_by_token(&hash_a1).await.unwrap().is_none());
+        assert!(read.get_by_token(&hash_a2).await.unwrap().is_none());
+        assert!(read.get_by_token(&hash_b1).await.unwrap().is_some());
+
+        let count_a: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
+            .bind(i64::from(user_a.id))
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let count_b: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
+            .bind(i64::from(user_b.id))
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(count_a, 0);
+        assert_eq!(count_b, 1);
     }
 }
