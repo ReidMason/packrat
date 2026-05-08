@@ -9,7 +9,8 @@ pub struct UserSession {
     pub token_hash: TokenHash,
     pub user_id: UserId,
     pub expires_at: AssetTimestamp,
-    pub create_at: AssetTimestamp,
+    pub created_at: AssetTimestamp,
+    pub revoked_at: Option<AssetTimestamp>,
 }
 
 impl UserSession {
@@ -20,7 +21,8 @@ impl UserSession {
             token_hash,
             user_id,
             expires_at,
-            create_at: AssetTimestamp::now(),
+            created_at: AssetTimestamp::now(),
+            revoked_at: None,
         }
     }
 
