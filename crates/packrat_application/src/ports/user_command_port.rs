@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use packrat_domain::user::{Email, User};
+use packrat_domain::user::{Email, PasswordHash, User};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum UserCommandError {
@@ -20,5 +20,9 @@ impl std::error::Error for UserCommandError {}
 
 #[async_trait]
 pub trait UserCommandPort: Send + Sync {
-    async fn create_user(&self, email: Email) -> Result<User, UserCommandError>;
+    async fn create_user(
+        &self,
+        email: Email,
+        password: PasswordHash,
+    ) -> Result<User, UserCommandError>;
 }

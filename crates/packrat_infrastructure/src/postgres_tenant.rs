@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 
 use packrat_application::{TenantCommandError, TenantCommandPort};
-use packrat_domain::entity::EntityTimestamp;
+use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::tenant::{Tenant, TenantId, TenantName};
 
 pub struct PostgresTenantCommand {
@@ -34,8 +34,8 @@ impl TenantCommandPort for PostgresTenantCommand {
         Ok(Tenant::new(
             TenantId::from(row.id),
             TenantName::from(row.name),
-            EntityTimestamp::from(row.created),
-            EntityTimestamp::from(row.updated),
+            AssetTimestamp::from(row.created),
+            AssetTimestamp::from(row.updated),
         ))
     }
 }

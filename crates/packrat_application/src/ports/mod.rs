@@ -4,6 +4,9 @@ mod asset_search_query;
 mod readiness_port;
 mod tenant_command_port;
 mod user_command_port;
+mod user_query_port;
+mod user_session_command_port;
+mod user_session_query_port;
 
 pub use asset_command_port::AssetCommandPort;
 pub use asset_query_port::AssetQueryPort;
@@ -11,3 +14,5 @@ pub use asset_search_query::AssetSearchQuery;
 pub use readiness_port::ReadinessPort;
 pub use tenant_command_port::{TenantCommandError, TenantCommandPort};
 pub use user_command_port::{UserCommandError, UserCommandPort};
+pub use user_query_port::{UserQueryError, UserQueryPort};
+pub use user_session_command_port::{UserSessionCommandError, UserSessionCommandPort};

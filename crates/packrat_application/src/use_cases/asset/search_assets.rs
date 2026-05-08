@@ -1,32 +1,32 @@
-use packrat_domain::entity::Entity;
+use packrat_domain::asset::Asset;
 
 use crate::ports::{AssetQueryPort, AssetSearchQuery};
 
-pub async fn execute(port: &impl AssetQueryPort, query: &AssetSearchQuery) -> Vec<Entity> {
+pub async fn execute(port: &impl AssetQueryPort, query: &AssetSearchQuery) -> Vec<Asset> {
     port.search_assets(query).await
 }
 
 #[cfg(test)]
 mod tests {
     use async_trait::async_trait;
-    use packrat_domain::entity::{EntityName, EntityTimestamp};
+    use packrat_domain::asset::{AssetId, AssetName, AssetTimestamp};
 
     use super::*;
     use crate::ports::AssetQueryPort;
 
-    struct MockPort(Vec<Entity>);
+    struct MockPort(Vec<Asset>);
 
     #[async_trait]
     impl AssetQueryPort for MockPort {
-        async fn get_asset_by_id(&self, _id: packrat_domain::entity::EntityId) -> Option<Entity> {
+        async fn get_asset_by_id(&self, _id: AssetId) -> Option<Asset> {
             None
         }
 
-        async fn list_active_assets(&self) -> Vec<Entity> {
+        async fn list_active_assets(&self) -> Vec<Asset> {
             self.0.clone()
         }
 
-        async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Entity> {
+        async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Asset> {
             self.0
                 .iter()
                 .filter(|e| {
@@ -52,8 +52,8 @@ mod tests {
 
         async fn list_child_assets(
             &self,
-            parent_id: packrat_domain::entity::EntityId,
-        ) -> Vec<Entity> {
+            parent_id: AssetId,
+        ) -> Vec<Asset> {
             self.0
                 .iter()
                 .filter(|e| e.parent == Some(parent_id))
@@ -62,12 +62,12 @@ mod tests {
         }
     }
 
-    fn entity(id: i64, name: &str) -> Entity {
-        Entity::new(
+    fn entity(id: i64, name: &str) -> Asset {
+        Asset::new(
             id.into(),
-            EntityName::from(name),
+            AssetName::from(name),
             None,
-            EntityTimestamp::static_for_tests(),
+            AssetTimestamp::static_for_tests(),
             None,
         )
     }

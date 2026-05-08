@@ -1,4 +1,4 @@
-use packrat_domain::entity::Entity;
+use packrat_domain::asset::Asset;
 use serde::Serialize;
 
 #[derive(serde::Deserialize)]
@@ -27,7 +27,7 @@ pub struct AssetDto {
 }
 
 impl AssetDto {
-    pub fn from_entity(e: Entity) -> Self {
+    pub fn from_entity(e: Asset) -> Self {
         Self {
             id: i64::from(e.id),
             name: e.name.as_str().to_string(),

@@ -1,8 +1,8 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use packrat_application::{UserCommandError, create_user};
-use packrat_domain::user::Email;
+use packrat_application::{UserCommandError, UserCommandPort};
+use packrat_domain::user::{Email, PasswordHash};
 
 use crate::dto::{CreateUserDto, ErrorBody, SuccessBody, UserDto};
 use crate::state::AppState;
@@ -25,7 +25,23 @@ pub async fn create_user_handler(
         ));
     }
 
-    match create_user(state.user_command.as_ref(), Email::from(email)).await {
+    let password_hash = PasswordHash::generate(&body.password).map_err(|err| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorBody::message(format!(
+                "Internal security error: {}",
+                err
+            ))),
+        )
+    })?;
+
+    match UserCommandPort::create_user(
+        state.user_command.as_ref(),
+        Email::from(email),
+        password_hash,
+    )
+    .await
+    {
         Ok(user) => Ok((
             StatusCode::CREATED,
             Json(SuccessBody::new(UserDto::from_user(user))),
