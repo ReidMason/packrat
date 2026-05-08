@@ -115,9 +115,26 @@
             ]
           );
       };
+
+      rustPlatformWbg = pkgs.makeRustPlatform {
+        cargo = rustToolchain;
+        rustc = rustToolchain;
+      };
+      wasm-bindgen-cli-pinned = rustPlatformWbg.buildRustPackage rec {
+        pname = "wasm-bindgen-cli";
+        version = "0.2.120";
+        src = pkgs.fetchCrate {
+          inherit pname version;
+          hash = "sha256-Dkkx8Bhfk+y/jEz9Fzwytmv2N3Gj/7ST+5MlPRzzetU=";
+        };
+        cargoHash = "sha256-5Zu/Sh9aBMxB+KGC1MHWJAQ8PuE40M6lsenkpFEwJ6A=";
+        meta.mainProgram = "wasm-bindgen";
+      };
+
       commonInputs = with pkgs; [
         rustToolchain
         dioxus-cli
+        wasm-bindgen-cli-pinned
         tailwindcss_4
         pkg-config
         openssl_3
@@ -139,9 +156,9 @@
             rustc --version
             dx --version
 
-            if command -v zsh >/dev/null 2>&1 && [ -z "$ZSH_VERSION" ]; then
-                exec zsh
-              fi
+            if command -v zsh >/dev/null 2>&1 && [ -z "$ZSH_VERSION" ] && [[ $- == *i* ]]; then
+              exec zsh
+            fi
           '';
         }
         // linuxAndroid.shellEnv);
