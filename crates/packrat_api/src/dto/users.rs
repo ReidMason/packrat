@@ -2,6 +2,18 @@ use packrat_domain::user::User;
 use serde::Serialize;
 
 #[derive(serde::Deserialize)]
+pub struct LoginRequestDto {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+pub struct LoginDto {
+    pub user_id: i64,
+    pub token: String,
+}
+
+#[derive(serde::Deserialize)]
 pub struct CreateUserDto {
     pub email: String,
     pub password: String,

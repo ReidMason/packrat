@@ -1,6 +1,7 @@
 mod app;
 mod dto;
 mod handlers;
+mod middleware;
 mod state;
 mod static_ui;
 
@@ -9,7 +10,8 @@ use std::sync::Arc;
 
 use packrat_infrastructure::{
     PostgresAssetCommand, PostgresAssetQuery, PostgresReadiness, PostgresTenantCommand,
-    PostgresUserCommand, connect_pool, run_migrations,
+    PostgresTenantQuery, PostgresUserCommand, PostgresUserQuery, PostgresUserSessionCommand,
+    PostgresUserSessionQuery, connect_pool, run_migrations,
 };
 
 use crate::state::AppState;
@@ -51,7 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         command: Arc::new(PostgresAssetCommand::new(pool.clone())),
         query: Arc::new(PostgresAssetQuery::new(pool.clone())),
         user_command: Arc::new(PostgresUserCommand::new(pool.clone())),
-        tenant_command: Arc::new(PostgresTenantCommand::new(pool)),
+        user_query: Arc::new(PostgresUserQuery::new(pool.clone())),
+        user_session_command: Arc::new(PostgresUserSessionCommand::new(pool.clone())),
+        user_session_query: Arc::new(PostgresUserSessionQuery::new(pool.clone())),
+        tenant_command: Arc::new(PostgresTenantCommand::new(pool.clone())),
+        tenant_query: Arc::new(PostgresTenantQuery::new(pool.clone())),
     };
 
     let app = app::build_app(state, static_ui);

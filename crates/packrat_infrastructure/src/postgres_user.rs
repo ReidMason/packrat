@@ -5,6 +5,7 @@ use packrat_application::{UserCommandError, UserCommandPort, UserQueryError, Use
 use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::user::{Email, PasswordHash, User, UserId};
 
+#[derive(Clone)]
 pub struct PostgresUserCommand {
     pool: PgPool,
 }
@@ -55,6 +56,7 @@ impl UserCommandPort for PostgresUserCommand {
     }
 }
 
+#[derive(Clone)]
 pub struct PostgresUserQuery {
     pool: PgPool,
 }

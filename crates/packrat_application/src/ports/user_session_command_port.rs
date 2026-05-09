@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use packrat_domain::aggregates::user_session::{TokenHash, UserSession};
+use packrat_domain::user::UserId;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum UserSessionCommandError {
@@ -20,4 +21,5 @@ impl std::error::Error for UserSessionCommandError {}
 pub trait UserSessionCommandPort: Send + Sync {
     async fn save(&self, session: UserSession) -> Result<(), UserSessionCommandError>;
     async fn delete_by_token(&self, token: TokenHash) -> Result<(), UserSessionCommandError>;
+    async fn delete_all_for_user(&self, user_id: UserId) -> Result<(), UserSessionCommandError>;
 }

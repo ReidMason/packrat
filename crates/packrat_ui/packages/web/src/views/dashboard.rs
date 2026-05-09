@@ -6,7 +6,9 @@ use crate::Route;
 
 fn spawn_search(
     base: String,
+    tenant_id: i64,
     query: String,
+    token: Option<String>,
     mut search_busy: Signal<bool>,
     mut search_results: Signal<Option<Result<Vec<AssetDto>, String>>>,
     recent: Signal<Vec<RecentBrief>>,
@@ -16,11 +18,11 @@ fn spawn_search(
         let res = if query.trim().is_empty() {
             Err("Enter a search term.".into())
         } else {
-            api_client::search_assets(&base, &query).await
+            api_client::search_assets(&base, tenant_id, &query, token.as_deref()).await
         };
         if let Ok(ref list) = res {
             if let Some(asset) = list.first() {
-                remember_recent(recent, asset.id, asset.name.clone());
+                remember_recent(recent, asset.tenant_id, asset.id, asset.name.clone());
             }
         }
         search_results.set(Some(res));
@@ -31,10 +33,12 @@ fn spawn_search(
 #[component]
 pub fn Dashboard() -> Element {
     let api_base = use_context::<Signal<String>>();
+    let auth_token = use_context::<Signal<Option<String>>>();
+    let active_tenant = use_context::<Signal<Option<i64>>>();
     let mut recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut search_term = use_signal(String::new);
-    let search_results = use_signal(|| Option::<Result<Vec<AssetDto>, String>>::None);
+    let mut search_results = use_signal(|| Option::<Result<Vec<AssetDto>, String>>::None);
     let search_busy = use_signal(|| false);
 
     rsx! {
@@ -48,10 +52,21 @@ pub fn Dashboard() -> Element {
                     "Search assets by name. Recent opens stay in this browser only. ",
                     "API URL and health checks are under Debug."
                 }
-                Link {
-                    class: "inline-flex mt-4 rounded-lg bg-ui-primary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90",
-                    to: Route::NewAsset {},
-                    "Add new asset"
+                {
+                    match active_tenant() {
+                        Some(tid) => rsx! {
+                            Link {
+                                class: "inline-flex mt-4 rounded-lg bg-ui-primary text-ui-bg px-4 py-2.5 text-sm font-medium hover:opacity-90",
+                                to: Route::NewAsset { tenant_id: tid },
+                                "Add new asset"
+                            }
+                        },
+                        None => rsx! {
+                            p { class: "mt-4 text-sm text-ui-text-muted",
+                                "Create a workspace in Account to add assets."
+                            }
+                        },
+                    }
                 }
             }
 
@@ -70,11 +85,20 @@ pub fn Dashboard() -> Element {
                             if search_busy() {
                                 return;
                             }
+                            let Some(tenant_id) = active_tenant() else {
+                                search_results.set(Some(Err(
+                                    "Choose a workspace under Account first.".into(),
+                                )));
+                                return;
+                            };
                             let base = api_base();
+                            let token = auth_token();
                             let q = search_term().trim().to_string();
                             spawn_search(
                                 base,
+                                tenant_id,
                                 q,
+                                token,
                                 search_busy,
                                 search_results,
                                 recent,
@@ -110,7 +134,7 @@ pub fn Dashboard() -> Element {
                                     Link {
                                         key: "{it.id}",
                                         class: "block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary",
-                                        to: Route::AssetDetail { id: it.id },
+                                        to: Route::AssetDetail { tenant_id: it.tenant_id, id: it.id },
                                         AssetCard { asset: it }
                                     }
                                 }
@@ -150,7 +174,7 @@ pub fn Dashboard() -> Element {
                                 }
                                 Link {
                                     class: "shrink-0 rounded-lg border border-ui-bg-dim px-3 py-1.5 text-xs font-medium text-ui-text hover:bg-ui-bg-dim",
-                                    to: Route::AssetDetail { id: entry.id },
+                                    to: Route::AssetDetail { tenant_id: entry.tenant_id, id: entry.id },
                                     "Open"
                                 }
                             }

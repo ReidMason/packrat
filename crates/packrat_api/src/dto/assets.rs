@@ -16,10 +16,10 @@ pub struct SearchAssetsDto {
     pub fuzzyname: Option<String>,
 }
 
-/// **DTO** — `data` payload inside [`SuccessBody`](super::SuccessBody) for asset reads/creates.
 #[derive(Serialize)]
 pub struct AssetDto {
     pub id: i64,
+    pub tenant_id: i64,
     pub name: String,
     pub parent_id: Option<i64>,
     pub created: String,
@@ -30,6 +30,7 @@ impl AssetDto {
     pub fn from_entity(e: Asset) -> Self {
         Self {
             id: i64::from(e.id),
+            tenant_id: i64::from(e.tenant_id),
             name: e.name.as_str().to_string(),
             parent_id: e.parent.map(i64::from),
             created: e.created.to_string(),

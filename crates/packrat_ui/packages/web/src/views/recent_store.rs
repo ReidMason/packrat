@@ -1,11 +1,12 @@
 use dioxus::prelude::*;
 
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
-pub const RECENT_KEY: &str = "packrat_recent_assets_v1";
+pub const RECENT_KEY: &str = "packrat_recent_assets_v2";
 pub const MAX_RECENT: usize = 10;
 
 #[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RecentBrief {
+    pub tenant_id: i64,
     pub id: i64,
     pub name: String,
 }
@@ -42,10 +43,17 @@ pub fn save_recent_disk(entries: &[RecentBrief]) {
 #[cfg(not(target_arch = "wasm32"))]
 pub fn save_recent_disk(_entries: &[RecentBrief]) {}
 
-pub fn remember_recent(mut recent: Signal<Vec<RecentBrief>>, id: i64, name: String) {
+pub fn remember_recent(mut recent: Signal<Vec<RecentBrief>>, tenant_id: i64, id: i64, name: String) {
     let mut v = recent();
     v.retain(|e| e.id != id);
-    v.insert(0, RecentBrief { id, name });
+    v.insert(
+        0,
+        RecentBrief {
+            tenant_id,
+            id,
+            name,
+        },
+    );
     v.truncate(MAX_RECENT);
     save_recent_disk(&v);
     recent.set(v);
