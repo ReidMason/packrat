@@ -142,9 +142,10 @@ mod tests {
         let sessions = PostgresUserSessionCommand::new(pool.clone());
         sessions.save(session.clone()).await.unwrap();
 
+        let token_bytes: Vec<u8> = session.token_hash.clone().into();
         let row = sqlx::query!(
             "SELECT user_id, expires_at, revoked_at FROM sessions WHERE token_hash = $1",
-            Vec::<u8>::from(session.token_hash.clone()).as_slice() as &[u8],
+            token_bytes.as_slice() as &[u8],
         )
         .fetch_one(&pool)
         .await
@@ -175,7 +176,7 @@ mod tests {
 
         sessions.delete_by_token(hash_clone).await.unwrap();
 
-        let count = sqlx::query_scalar!("SELECT COUNT(*)::bigint FROM sessions")
+        let count = sqlx::query_scalar!(r#"SELECT COUNT(*)::bigint AS "count!" FROM sessions"#)
             .fetch_one(&pool)
             .await
             .unwrap();
@@ -363,14 +364,14 @@ mod tests {
         assert!(read.get_by_token(&hash_b1).await.unwrap().is_some());
 
         let count_a = sqlx::query_scalar!(
-            "SELECT COUNT(*)::bigint FROM sessions WHERE user_id = $1",
+            r#"SELECT COUNT(*)::bigint AS "count!" FROM sessions WHERE user_id = $1"#,
             i64::from(user_a.id),
         )
         .fetch_one(&pool)
         .await
         .unwrap();
         let count_b = sqlx::query_scalar!(
-            "SELECT COUNT(*)::bigint FROM sessions WHERE user_id = $1",
+            r#"SELECT COUNT(*)::bigint AS "count!" FROM sessions WHERE user_id = $1"#,
             i64::from(user_b.id),
         )
         .fetch_one(&pool)

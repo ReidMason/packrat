@@ -141,7 +141,7 @@ mod tests {
         assert!(i64::from(user.id) > 0);
 
         let count = sqlx::query_scalar!(
-            "SELECT COUNT(*)::bigint FROM users WHERE email = $1",
+            r#"SELECT COUNT(*)::bigint AS "count!" FROM users WHERE email = $1"#,
             "hello@example.com",
         )
         .fetch_one(&pool)

@@ -75,6 +75,7 @@ sqlx-prepare:
     export DATABASE_URL="{{db_url}}"
     cargo sqlx migrate run --source crates/packrat_infrastructure/migrations
     cargo sqlx prepare --workspace --database-url "$DATABASE_URL" -- --all-targets
+    (cd crates/packrat_infrastructure && cargo sqlx prepare --database-url "$DATABASE_URL" -- --all-targets)
 
 # Run this once to build a 'phone'
 [group('mobile')]

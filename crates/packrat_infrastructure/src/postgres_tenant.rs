@@ -212,7 +212,7 @@ mod tests {
 
         let owner_role_id = template_role_id(&pool, "Owner").await;
         let cnt = sqlx::query_scalar!(
-            "SELECT COUNT(*)::bigint FROM user_roles WHERE user_id = $1 AND tenant_id = $2 AND role_id = $3",
+            r#"SELECT COUNT(*)::bigint AS "count!" FROM user_roles WHERE user_id = $1 AND tenant_id = $2 AND role_id = $3"#,
             uid,
             i64::from(tenant.id),
             owner_role_id,
