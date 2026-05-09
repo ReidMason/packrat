@@ -13,10 +13,10 @@ enum Route {
     #[layout(AppShell)]
     #[route("/")]
     Home {},
-    #[route("/assets/new")]
-    NewAsset {},
-    #[route("/assets/:id")]
-    AssetDetail { id: i64 },
+    #[route("/tenants/:tenant_id/assets/new")]
+    NewAsset { tenant_id: i64 },
+    #[route("/tenants/:tenant_id/assets/:id")]
+    AssetDetail { tenant_id: i64, id: i64 },
     #[route("/debug")]
     DebugPage {},
     #[route("/setup")]
@@ -45,9 +45,11 @@ fn AppShell() -> Element {
     let api_base = use_signal(crate::api_base::initial_api_base);
     let recent = use_signal(|| recent_store::load_recent_disk());
     let auth_token = use_signal(|| None::<String>);
+    let active_tenant = use_signal(|| crate::api_base::initial_tenant_id());
     use_context_provider(|| api_base);
     use_context_provider(|| recent);
     use_context_provider(|| auth_token);
+    use_context_provider(|| active_tenant);
 
     rsx! {
         div {
@@ -69,10 +71,22 @@ fn AppShell() -> Element {
                         to: Route::Home {},
                         "Dashboard"
                     }
-                    Link {
-                        class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
-                        to: Route::NewAsset {},
-                        "New asset"
+                    {
+                        match active_tenant() {
+                            Some(tid) => rsx! {
+                                Link {
+                                    class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
+                                    to: Route::NewAsset { tenant_id: tid },
+                                    "New asset"
+                                }
+                            },
+                            None => rsx! {
+                                p {
+                                    class: "rounded-lg px-3 py-2 text-sm text-ui-text-muted",
+                                    "New asset — set workspace in Setup"
+                                }
+                            },
+                        }
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
@@ -95,10 +109,19 @@ fn AppShell() -> Element {
                         to: Route::Home {},
                         "Dashboard"
                     }
-                    Link {
-                        class: "text-sm font-medium text-ui-text-muted",
-                        to: Route::NewAsset {},
-                        "New asset"
+                    {
+                        match active_tenant() {
+                            Some(tid) => rsx! {
+                                Link {
+                                    class: "text-sm font-medium text-ui-text-muted",
+                                    to: Route::NewAsset { tenant_id: tid },
+                                    "New asset"
+                                }
+                            },
+                            None => rsx! {
+                                span { class: "text-sm text-ui-text-muted", "New asset" }
+                            },
+                        }
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",

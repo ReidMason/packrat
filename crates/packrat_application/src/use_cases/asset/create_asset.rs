@@ -1,13 +1,15 @@
 use packrat_domain::asset::{Asset, AssetId, AssetName};
+use packrat_domain::tenant::TenantId;
 
 use crate::ports::AssetCommandPort;
 
 pub async fn execute(
     port: &impl AssetCommandPort,
+    tenant_id: TenantId,
     name: AssetName,
     parent: Option<AssetId>,
-) -> Asset {
-    port.create_asset(name, parent).await
+) -> Result<Asset, String> {
+    port.create_asset(tenant_id, name, parent).await
 }
 
 #[cfg(test)]
@@ -20,15 +22,32 @@ mod tests {
 
     #[async_trait]
     impl AssetCommandPort for MockAssetCommand {
-        async fn create_asset(&self, name: AssetName, parent: Option<AssetId>) -> Asset {
+        async fn create_asset(
+            &self,
+            tenant_id: TenantId,
+            name: AssetName,
+            parent: Option<AssetId>,
+        ) -> Result<Asset, String> {
             let created = AssetTimestamp::now();
             let deleted = None;
-            Asset::new(AssetId::from(99), name, parent, created, deleted)
+            Ok(Asset::new(
+                AssetId::from(99),
+                tenant_id,
+                name,
+                parent,
+                created,
+                deleted,
+            ))
         }
-        async fn update_asset(&self, _id: AssetId, _changes: PartialAsset) -> Result<(), String> {
+        async fn update_asset(
+            &self,
+            _tenant_id: TenantId,
+            _id: AssetId,
+            _changes: PartialAsset,
+        ) -> Result<(), String> {
             unimplemented!()
         }
-        async fn delete_asset(&self, _id: AssetId) -> Result<(), String> {
+        async fn delete_asset(&self, _tenant_id: TenantId, _id: AssetId) -> Result<(), String> {
             unimplemented!()
         }
     }
@@ -37,8 +56,12 @@ mod tests {
     async fn execute_creates_asset_via_port() {
         let port = MockAssetCommand;
         let parent = Some(AssetId::from(1));
-        let asset = execute(&port, AssetName::from("alpha"), parent).await;
+        let tid = TenantId::from(7);
+        let asset = execute(&port, tid, AssetName::from("alpha"), parent)
+            .await
+            .unwrap();
         assert_eq!(asset.id, AssetId::from(99));
+        assert_eq!(asset.tenant_id, tid);
         assert_eq!(asset.name, AssetName::from("alpha"));
         assert_eq!(asset.parent, parent);
     }
@@ -46,7 +69,10 @@ mod tests {
     #[tokio::test]
     async fn execute_creates_root_asset() {
         let port = MockAssetCommand;
-        let asset = execute(&port, AssetName::from("root"), None).await;
+        let tid = TenantId::from(1);
+        let asset = execute(&port, tid, AssetName::from("root"), None)
+            .await
+            .unwrap();
         assert_eq!(asset.parent, None);
     }
 }

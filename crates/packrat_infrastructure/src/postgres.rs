@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
 use packrat_domain::aggregates::partial_asset::PartialAsset;
-use packrat_domain::asset::{AssetId, AssetName, AssetTimestamp, Asset};
+use packrat_domain::asset::{Asset, AssetId, AssetName, AssetTimestamp};
+use packrat_domain::tenant::TenantId;
 use sqlx::PgPool;
 use sqlx::Row;
 use sqlx::postgres::PgPoolOptions;
@@ -18,28 +19,64 @@ impl PostgresAssetCommand {
 
 #[async_trait]
 impl AssetCommandPort for PostgresAssetCommand {
-    async fn create_asset(&self, name: AssetName, parent: Option<AssetId>) -> Asset {
+    async fn create_asset(
+        &self,
+        tenant_id: TenantId,
+        name: AssetName,
+        parent: Option<AssetId>,
+    ) -> Result<Asset, String> {
+        let tid = i64::from(tenant_id);
+        if let Some(pid) = parent {
+            let row_tid: Option<i64> = sqlx::query_scalar(
+                "SELECT tenant_id FROM assets WHERE id = $1 AND deleted IS NULL",
+            )
+            .bind(i64::from(pid))
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
+            match row_tid {
+                Some(t) if t == tid => {}
+                Some(_) => return Err("parent asset belongs to another tenant".into()),
+                None => return Err("parent asset not found".into()),
+            }
+        }
+
         let created = AssetTimestamp::now();
-        let deleted = None;
-        let id: i64 = sqlx::query_scalar!(
-            "INSERT INTO assets (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
-            name.as_str(),
-            parent.map(i64::from) as Option<i64>,
-            chrono::DateTime::from(created),
-            deleted.map(chrono::DateTime::from) as Option<chrono::DateTime<chrono::Utc>>,
+        let deleted: Option<chrono::DateTime<chrono::Utc>> = None;
+        let id: i64 = sqlx::query_scalar(
+            "INSERT INTO assets (name, parent_id, created, deleted, tenant_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
         )
+        .bind(name.as_str())
+        .bind(parent.map(i64::from))
+        .bind(chrono::DateTime::from(created))
+        .bind(deleted)
+        .bind(tid)
         .fetch_one(&self.pool)
         .await
-        .expect("insert asset");
+        .map_err(|e| e.to_string())?;
 
-        Asset::new(AssetId::from(id), name, parent, created, deleted)
+        Ok(Asset::new(
+            AssetId::from(id),
+            tenant_id,
+            name,
+            parent,
+            created,
+            None,
+        ))
     }
 
-    async fn update_asset(&self, id: AssetId, changes: PartialAsset) -> Result<(), String> {
-        let current_row = sqlx::query!(
-            "SELECT name, parent_id FROM assets WHERE id = $1 AND deleted IS NULL",
-            i64::from(id)
+    async fn update_asset(
+        &self,
+        tenant_id: TenantId,
+        id: AssetId,
+        changes: PartialAsset,
+    ) -> Result<(), String> {
+        let tid = i64::from(tenant_id);
+        let current_row = sqlx::query(
+            "SELECT name, parent_id FROM assets WHERE id = $1 AND tenant_id = $2 AND deleted IS NULL",
         )
+        .bind(i64::from(id))
+        .bind(tid)
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| e.to_string())?
@@ -47,23 +84,39 @@ impl AssetCommandPort for PostgresAssetCommand {
 
         let name = match changes.name {
             Some(name) => String::from(name),
-            None => current_row.name,
+            None => current_row.try_get::<String, _>("name").map_err(|e| e.to_string())?,
         };
 
         let parent = match changes.parent {
             Some(new_parent) => new_parent.map(i64::from),
-            None => current_row.parent_id,
+            None => current_row
+                .try_get::<Option<i64>, _>("parent_id")
+                .map_err(|e| e.to_string())?,
         };
 
-        let result = sqlx::query!(
-            "UPDATE assets SET name = $1, parent_id = $2 WHERE id = $3",
-            name,
-            parent,
-            i64::from(id)
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        if let Some(pid) = parent {
+            let row_tid: Option<i64> = sqlx::query_scalar(
+                "SELECT tenant_id FROM assets WHERE id = $1 AND deleted IS NULL",
+            )
+            .bind(pid)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
+            match row_tid {
+                Some(t) if t == tid => {}
+                Some(_) => return Err("parent asset belongs to another tenant".into()),
+                None => return Err("parent asset not found".into()),
+            }
+        }
+
+        let result = sqlx::query("UPDATE assets SET name = $1, parent_id = $2 WHERE id = $3 AND tenant_id = $4")
+            .bind(&name)
+            .bind(parent)
+            .bind(i64::from(id))
+            .bind(tid)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
         if result.rows_affected() == 0 {
             return Err(format!("Entity with ID {} not found", i64::from(id)));
@@ -72,23 +125,26 @@ impl AssetCommandPort for PostgresAssetCommand {
         Ok(())
     }
 
-    async fn delete_asset(&self, id: AssetId) -> Result<(), String> {
-        let is_a_parent = sqlx::query_scalar!(
-            "SELECT EXISTS (SELECT 1 FROM assets WHERE parent_id = $1 AND deleted IS NULL)",
-            i64::from(id)
+    async fn delete_asset(&self, tenant_id: TenantId, id: AssetId) -> Result<(), String> {
+        let tid = i64::from(tenant_id);
+        let is_a_parent: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM assets WHERE parent_id = $1 AND deleted IS NULL AND tenant_id = $2)",
         )
+        .bind(i64::from(id))
+        .bind(tid)
         .fetch_one(&self.pool)
         .await
         .map_err(|err| err.to_string())?;
 
-        if is_a_parent.unwrap_or(false) {
+        if is_a_parent {
             return Err("Cannot Delete: Entity has active children".into());
         }
 
-        let result = sqlx::query!(
-            "UPDATE assets SET deleted = NOW() WHERE id = $1 AND deleted IS NULL",
-            i64::from(id),
+        let result = sqlx::query(
+            "UPDATE assets SET deleted = NOW() WHERE id = $1 AND tenant_id = $2 AND deleted IS NULL",
         )
+        .bind(i64::from(id))
+        .bind(tid)
         .execute(&self.pool)
         .await
         .map_err(|err| err.to_string())?;
@@ -112,6 +168,7 @@ impl PostgresAssetQuery {
 
     fn entity_from_row(row: &sqlx::postgres::PgRow) -> Option<Asset> {
         let id: i64 = row.try_get("id").ok()?;
+        let tenant_id: i64 = row.try_get("tenant_id").ok()?;
         let name: String = row.try_get("name").ok()?;
         let parent_id: Option<i64> = row.try_get("parent_id").ok()?;
         let created: chrono::DateTime<chrono::Utc> = row
@@ -123,6 +180,7 @@ impl PostgresAssetQuery {
 
         Some(Asset::new(
             AssetId::from(id),
+            TenantId::from(tenant_id),
             AssetName::from(name),
             parent_id.map(AssetId::from),
             AssetTimestamp::from(created),
@@ -133,22 +191,25 @@ impl PostgresAssetQuery {
 
 #[async_trait]
 impl AssetQueryPort for PostgresAssetQuery {
-    async fn get_asset_by_id(&self, id: AssetId) -> Option<Asset> {
-        let row =
-            sqlx::query("SELECT id, name, parent_id, created, deleted FROM assets WHERE id = $1")
-                .bind(i64::from(id))
-                .fetch_optional(&self.pool)
-                .await
-                .ok()
-                .flatten()?;
+    async fn get_asset_by_id(&self, tenant_id: TenantId, id: AssetId) -> Option<Asset> {
+        let row = sqlx::query(
+            "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE id = $1 AND tenant_id = $2",
+        )
+        .bind(i64::from(id))
+        .bind(i64::from(tenant_id))
+        .fetch_optional(&self.pool)
+        .await
+        .ok()
+        .flatten()?;
 
         Self::entity_from_row(&row)
     }
 
-    async fn list_active_assets(&self) -> Vec<Asset> {
+    async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<Asset> {
         let rows = sqlx::query(
-            "SELECT id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL ORDER BY LOWER(name) ASC",
+            "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 ORDER BY LOWER(name) ASC",
         )
+        .bind(i64::from(tenant_id))
         .fetch_all(&self.pool)
         .await
         .unwrap_or_default();
@@ -158,7 +219,7 @@ impl AssetQueryPort for PostgresAssetQuery {
             .collect()
     }
 
-    async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Asset> {
+    async fn search_assets(&self, tenant_id: TenantId, query: &AssetSearchQuery) -> Vec<Asset> {
         let name = query
             .name
             .as_ref()
@@ -173,12 +234,13 @@ impl AssetQueryPort for PostgresAssetQuery {
             .map(|s| s.to_string());
 
         let rows = sqlx::query(
-            r#"SELECT id, name, parent_id, created, deleted FROM assets
-               WHERE deleted IS NULL
-                 AND ($1::text IS NULL OR name = $1)
-                 AND ($2::text IS NULL OR strpos(lower(name), lower($2)) > 0)
+            r#"SELECT id, tenant_id, name, parent_id, created, deleted FROM assets
+               WHERE deleted IS NULL AND tenant_id = $1
+                 AND ($2::text IS NULL OR name = $2)
+                 AND ($3::text IS NULL OR strpos(lower(name), lower($3)) > 0)
                ORDER BY LOWER(name) ASC"#,
         )
+        .bind(i64::from(tenant_id))
         .bind(name)
         .bind(fuzzy)
         .fetch_all(&self.pool)
@@ -190,10 +252,11 @@ impl AssetQueryPort for PostgresAssetQuery {
             .collect()
     }
 
-    async fn list_child_assets(&self, parent_id: AssetId) -> Vec<Asset> {
+    async fn list_child_assets(&self, tenant_id: TenantId, parent_id: AssetId) -> Vec<Asset> {
         let rows = sqlx::query(
-            "SELECT id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND parent_id = $1 ORDER BY LOWER(name) ASC",
+            "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 AND parent_id = $2 ORDER BY LOWER(name) ASC",
         )
+        .bind(i64::from(tenant_id))
         .bind(i64::from(parent_id))
         .fetch_all(&self.pool)
         .await
@@ -226,19 +289,34 @@ pub async fn ping_database(pool: &PgPool) -> Result<(), sqlx::Error> {
 #[cfg(test)]
 mod postgres_tests {
     use super::*;
+    use packrat_domain::tenant::TenantId;
     use sqlx::Row;
+
+    async fn insert_test_tenant(pool: &PgPool) -> TenantId {
+        let id: i64 = sqlx::query_scalar("INSERT INTO tenants (name) VALUES ($1) RETURNING id")
+            .bind("postgres asset tests")
+            .fetch_one(pool)
+            .await
+            .unwrap();
+        TenantId::from(id)
+    }
 
     #[sqlx::test]
     async fn test_delete_asset_errors_when_is_parent(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
         let command = PostgresAssetCommand::new(pool.clone());
 
-        let parent = command.create_asset(AssetName::from("Parent"), None).await;
+        let parent = command
+            .create_asset(tenant_id, AssetName::from("Parent"), None)
+            .await
+            .unwrap();
 
         let _child = command
-            .create_asset(AssetName::from("Child"), Some(parent.id))
-            .await;
+            .create_asset(tenant_id, AssetName::from("Child"), Some(parent.id))
+            .await
+            .unwrap();
 
-        let result = command.delete_asset(parent.id).await;
+        let result = command.delete_asset(tenant_id, parent.id).await;
 
         assert!(result.is_err());
         assert_eq!(
@@ -258,10 +336,11 @@ mod postgres_tests {
 
     #[sqlx::test]
     async fn test_delete_non_existent_asset_returns_error(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
         let command = PostgresAssetCommand::new(pool);
         let fake_id = AssetId::from(999);
 
-        let result = command.delete_asset(fake_id).await;
+        let result = command.delete_asset(tenant_id, fake_id).await;
 
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("not found"));
@@ -269,10 +348,14 @@ mod postgres_tests {
 
     #[sqlx::test]
     async fn test_delete_asset_successfully(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
         let command = PostgresAssetCommand::new(pool.clone());
-        let asset = command.create_asset(AssetName::from("Target"), None).await;
+        let asset = command
+            .create_asset(tenant_id, AssetName::from("Target"), None)
+            .await
+            .unwrap();
 
-        let result = command.delete_asset(asset.id).await;
+        let result = command.delete_asset(tenant_id, asset.id).await;
 
         assert!(result.is_ok());
 
@@ -288,17 +371,19 @@ mod postgres_tests {
 
     #[sqlx::test]
     async fn test_update_asset_name_only(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
         let command = PostgresAssetCommand::new(pool.clone());
         let asset = command
-            .create_asset(AssetName::from("Old Name"), None)
-            .await;
+            .create_asset(tenant_id, AssetName::from("Old Name"), None)
+            .await
+            .unwrap();
 
         let changes = PartialAsset {
             name: Some(AssetName::from("New Name")),
-            parent: None, // No change to parent
+            parent: None,
         };
 
-        let result = command.update_asset(asset.id, changes).await;
+        let result = command.update_asset(tenant_id, asset.id, changes).await;
         assert!(result.is_ok());
 
         let row = sqlx::query("SELECT name FROM assets WHERE id = $1")

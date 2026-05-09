@@ -1,15 +1,21 @@
 use packrat_domain::asset::Asset;
+use packrat_domain::tenant::TenantId;
 
 use crate::ports::{AssetQueryPort, AssetSearchQuery};
 
-pub async fn execute(port: &impl AssetQueryPort, query: &AssetSearchQuery) -> Vec<Asset> {
-    port.search_assets(query).await
+pub async fn execute(
+    port: &impl AssetQueryPort,
+    tenant_id: TenantId,
+    query: &AssetSearchQuery,
+) -> Vec<Asset> {
+    port.search_assets(tenant_id, query).await
 }
 
 #[cfg(test)]
 mod tests {
     use async_trait::async_trait;
     use packrat_domain::asset::{AssetId, AssetName, AssetTimestamp};
+    use packrat_domain::tenant::TenantId;
 
     use super::*;
     use crate::ports::AssetQueryPort;
@@ -18,15 +24,15 @@ mod tests {
 
     #[async_trait]
     impl AssetQueryPort for MockPort {
-        async fn get_asset_by_id(&self, _id: AssetId) -> Option<Asset> {
+        async fn get_asset_by_id(&self, _tenant_id: TenantId, _id: AssetId) -> Option<Asset> {
             None
         }
 
-        async fn list_active_assets(&self) -> Vec<Asset> {
+        async fn list_active_assets(&self, _tenant_id: TenantId) -> Vec<Asset> {
             self.0.clone()
         }
 
-        async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Asset> {
+        async fn search_assets(&self, _tenant_id: TenantId, query: &AssetSearchQuery) -> Vec<Asset> {
             self.0
                 .iter()
                 .filter(|e| {
@@ -52,6 +58,7 @@ mod tests {
 
         async fn list_child_assets(
             &self,
+            _tenant_id: TenantId,
             parent_id: AssetId,
         ) -> Vec<Asset> {
             self.0
@@ -65,6 +72,7 @@ mod tests {
     fn entity(id: i64, name: &str) -> Asset {
         Asset::new(
             id.into(),
+            TenantId::from(1),
             AssetName::from(name),
             None,
             AssetTimestamp::static_for_tests(),
@@ -79,7 +87,10 @@ mod tests {
             name: Some("Beta".into()),
             fuzzyname: None,
         };
-        assert_eq!(execute(&port, &q).await, vec![entity(2, "Beta")]);
+        assert_eq!(
+            execute(&port, TenantId::from(1), &q).await,
+            vec![entity(2, "Beta")]
+        );
     }
 
     #[tokio::test]
@@ -89,7 +100,10 @@ mod tests {
             name: None,
             fuzzyname: Some("nik".into()),
         };
-        assert_eq!(execute(&port, &q).await, vec![entity(2, "Nikon Z9")]);
+        assert_eq!(
+            execute(&port, TenantId::from(1), &q).await,
+            vec![entity(2, "Nikon Z9")]
+        );
     }
 
     #[tokio::test]
@@ -103,6 +117,9 @@ mod tests {
             name: Some("Red Toolbox".into()),
             fuzzyname: Some("tool".into()),
         };
-        assert_eq!(execute(&port, &q).await, vec![entity(2, "Red Toolbox")]);
+        assert_eq!(
+            execute(&port, TenantId::from(1), &q).await,
+            vec![entity(2, "Red Toolbox")]
+        );
     }
 }

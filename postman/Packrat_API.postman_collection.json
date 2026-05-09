@@ -2,13 +2,17 @@
   "info": {
     "_postman_id": "a1b2c3d4-packrat-api",
     "name": "Packrat API",
-    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n**Auth:** after `POST /api/login`, send `Authorization: Bearer <token>` on all routes except `/api/health`, `/api/ready`, `/api/users`, and `/api/login`.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **POST /api/users** — register: `email` + `password`; returns `UserDto` (201).\n- **POST /api/login** — email/password; returns `user_id` and opaque `token` on success.\n- **GET /api/assets** — list active (non-deleted) assets.\n- **POST /api/assets/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/assets/:id/children** — active rows whose `parent_id` is that id.",
+    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n**Auth:** after `POST /api/login`, send `Authorization: Bearer <token>` on all routes except `/api/health`, `/api/ready`, `/api/users`, and `/api/login`.\n\n**Assets** are scoped per tenant: paths are under `/api/tenants/{{tenant_id}}/assets/...`. Create a tenant with `POST /api/tenants` first; use the returned `id` as `tenant_id`.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **POST /api/users** — register: `email` + `password`; returns `UserDto` (201).\n- **POST /api/login** — email/password; returns `user_id` and opaque `token` on success.\n- **GET /api/tenants/:tenant_id/assets** — list active (non-deleted) assets for that tenant.\n- **POST /api/tenants/:tenant_id/assets/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/tenants/:tenant_id/assets/:id/children** — active rows whose `parent_id` is that id.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "base_url",
       "value": "http://127.0.0.1:3000"
+    },
+    {
+      "key": "tenant_id",
+      "value": "1"
     }
   ],
   "item": [
@@ -88,8 +92,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/api/assets",
-            "description": "Returns `{ \"data\": [ AssetDto, ... ] }` for all assets where `deleted` is null, ordered by name (case-insensitive)."
+            "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets",
+            "description": "Returns `{ \"data\": [ AssetDto, ... ] }` for assets in this tenant where `deleted` is null, ordered by name (case-insensitive). AssetDto includes `tenant_id`."
           },
           "response": []
         },
@@ -107,8 +111,8 @@
               "mode": "raw",
               "raw": "{\n  \"name\": null,\n  \"fuzzyname\": \"tool\"\n}"
             },
-            "url": "{{base_url}}/api/assets/search",
-            "description": "Body JSON: optional `name` (exact match on stored name, case-sensitive) and optional `fuzzyname` (case-insensitive substring). At least one must be non-empty. Both may be set; filters are combined with AND. Returns `{ \"data\": [ AssetDto, ... ] }` for active assets only."
+            "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/search",
+            "description": "Body JSON: optional `name` (exact match on stored name, case-sensitive) and optional `fuzzyname` (case-insensitive substring). At least one must be non-empty. Both may be set; filters are combined with AND. Returns `{ \"data\": [ AssetDto, ... ] }` for active assets only in this tenant."
           },
           "response": []
         },
@@ -126,8 +130,8 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"Toolbox\",\n  \"parent_id\": null\n}"
             },
-            "url": "{{base_url}}/api/assets",
-            "description": "Creates a root asset when `parent_id` is null. Set `parent_id` to an existing asset id to nest."
+            "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets",
+            "description": "Creates a root asset when `parent_id` is null. Set `parent_id` to an existing asset id in the same tenant to nest."
           },
           "response": []
         },
@@ -136,8 +140,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/api/assets/1",
-            "description": "Returns 404 if the asset does not exist. Change the `1` in the path to another id as needed."
+            "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/1",
+            "description": "Returns 404 if the asset does not exist in this tenant. Change the `1` in the path to another id as needed."
           },
           "response": []
         },
@@ -146,7 +150,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/api/assets/1/children",
+            "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/1/children",
             "description": "Returns `{ \"data\": [ AssetDto, ... ] }` for active assets with `parent_id` equal to the path id (ordered by name). Empty array if none. Change `1` in the path as needed."
           },
           "response": []
@@ -156,7 +160,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{base_url}}/api/assets/1",
+            "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/1",
             "description": "204 on success. 404 if not found. 409 if the asset still has children. Change the `1` in the path to another id as needed."
           },
           "response": []

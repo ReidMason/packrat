@@ -28,14 +28,20 @@ fn api_router(state: AppState) -> Router {
 
     let protected = Router::new()
         .route("/tenants", post(create_tenant_handler))
-        .route("/assets/search", post(search_assets_handler))
         .route(
-            "/assets",
+            "/tenants/{tenant_id}/assets/search",
+            post(search_assets_handler),
+        )
+        .route(
+            "/tenants/{tenant_id}/assets",
             get(list_assets_handler).post(create_asset_handler),
         )
-        .route("/assets/{id}/children", get(list_child_assets_handler))
         .route(
-            "/assets/{id}",
+            "/tenants/{tenant_id}/assets/{id}/children",
+            get(list_child_assets_handler),
+        )
+        .route(
+            "/tenants/{tenant_id}/assets/{id}",
             get(get_asset_handler).delete(delete_asset_handler),
         )
         .layer(from_fn_with_state(state.clone(), require_session))

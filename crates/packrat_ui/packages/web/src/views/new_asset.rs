@@ -5,13 +5,12 @@ use crate::api_client;
 use crate::Route;
 
 #[component]
-pub fn NewAsset() -> Element {
+pub fn NewAsset(tenant_id: i64) -> Element {
     let api_base = use_context::<Signal<String>>();
     let auth_token = use_context::<Signal<Option<String>>>();
     let recent = use_context::<Signal<Vec<RecentBrief>>>();
 
     let mut name = use_signal(String::new);
-    // Empty string = no parent; otherwise option value is the parent's numeric key (not shown in labels).
     let mut parent_sel = use_signal(String::new);
     let mut flash = use_signal(|| Option::<String>::None);
     let mut busy = use_signal(|| false);
@@ -21,7 +20,8 @@ pub fn NewAsset() -> Element {
         let _ = list_gen();
         let base = api_base();
         let token = auth_token();
-        async move { api_client::list_assets(&base, token.as_deref()).await }
+        let tid = tenant_id;
+        async move { api_client::list_assets(&base, tid, token.as_deref()).await }
     });
 
     rsx! {
@@ -102,14 +102,26 @@ pub fn NewAsset() -> Element {
                             };
                             let recent_sig = recent;
                             let token = auth_token();
+                            let tid = tenant_id;
                             busy.set(true);
                             flash.set(None);
                             spawn(async move {
-                                match api_client::create_asset(&base, n, parent_id, token.as_deref())
+                                match api_client::create_asset(
+                                        &base,
+                                        tid,
+                                        n,
+                                        parent_id,
+                                        token.as_deref(),
+                                    )
                                     .await
                                 {
                                     Ok(asset) => {
-                                        remember_recent(recent_sig, asset.id, asset.name.clone());
+                                        remember_recent(
+                                            recent_sig,
+                                            asset.tenant_id,
+                                            asset.id,
+                                            asset.name.clone(),
+                                        );
                                         flash.set(Some(format!("Created “{}”.", asset.name)));
                                         name.write().clear();
                                         parent_sel.write().clear();

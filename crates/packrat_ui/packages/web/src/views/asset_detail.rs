@@ -4,12 +4,9 @@ use super::recent_store::{self, RecentBrief};
 use crate::api_client::{self, AssetDto};
 use crate::Route;
 
-/// Asset detail is driven by the URL, not only the `id` prop from the router outlet: the outlet can
-/// reuse the same component slot when only `/assets/:id` changes, so we read [`Route`] from the
-/// router (subscribes to history) for [`use_resource`] and for this scope’s render subscription.
 #[component]
-#[allow(unused_variables)] // `id` comes from the router; we read the active segment from history.
-pub fn AssetDetail(id: i64) -> Element {
+#[allow(unused_variables)]
+pub fn AssetDetail(tenant_id: i64, id: i64) -> Element {
     let _ = use_route::<Route>();
 
     let api_base = use_context::<Signal<String>>();
@@ -20,17 +17,19 @@ pub fn AssetDetail(id: i64) -> Element {
     let detail_res = use_resource(move || {
         let api_base_sig = api_base;
         let token_sig = auth_token;
+        let tid = tenant_id;
         async move {
             let router = try_router().ok_or_else(|| "router unavailable".to_string())?;
-            let asset_id = match router.current::<Route>() {
-                Route::AssetDetail { id } => id,
+            let (route_tid, asset_id) = match router.current::<Route>() {
+                Route::AssetDetail { tenant_id, id } => (tenant_id, id),
                 _ => return Err("unexpected route".into()),
             };
             let base = api_base_sig();
             let token = token_sig();
-            let asset = api_client::get_asset(&base, asset_id, token.as_deref()).await?;
+            let asset =
+                api_client::get_asset(&base, route_tid, asset_id, token.as_deref()).await?;
             let children =
-                api_client::list_child_assets(&base, asset_id, token.as_deref()).await?;
+                api_client::list_child_assets(&base, route_tid, asset_id, token.as_deref()).await?;
             Ok::<(AssetDto, Vec<AssetDto>), String>((asset, children))
         }
     });
@@ -65,6 +64,7 @@ pub fn AssetDetail(id: i64) -> Element {
                 },
                 Some(Ok((asset, children))) => {
                     let asset_id = asset.id;
+                    let route_tid = asset.tenant_id;
                     let name = asset.name.clone();
                     let parent_note = if asset.parent_id.is_some() {
                         "Nested under another asset"
@@ -109,7 +109,7 @@ pub fn AssetDetail(id: i64) -> Element {
                                                 class: "flex items-center justify-between gap-3 px-4 py-3 first:rounded-t-lg last:rounded-b-lg",
                                                 Link {
                                                     class: "min-w-0 flex-1 text-sm font-medium text-ui-primary hover:underline truncate",
-                                                    to: Route::AssetDetail { id: child.id },
+                                                    to: Route::AssetDetail { tenant_id: child.tenant_id, id: child.id },
                                                     "{child.name}"
                                                 }
                                             }
@@ -147,7 +147,12 @@ pub fn AssetDetail(id: i64) -> Element {
                                                 delete_busy.set(true);
                                                 delete_msg.set(None);
                                                 spawn(async move {
-                                                    match api_client::delete_asset(&base, asset_id, token.as_deref())
+                                                    match api_client::delete_asset(
+                                                            &base,
+                                                            route_tid,
+                                                            asset_id,
+                                                            token.as_deref(),
+                                                        )
                                                         .await
                                                     {
                                                         Ok(()) => {

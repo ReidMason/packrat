@@ -27,11 +27,13 @@ use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
 use packrat_domain::{
     asset::{Asset, AssetId, AssetName, AssetTimestamp},
     aggregates::partial_asset::PartialAsset,
+    tenant::TenantId,
 };
 
-fn stub_entity(id: AssetId) -> Asset {
+fn stub_entity(id: AssetId, tenant_id: TenantId) -> Asset {
     Asset::new(
         id,
+        tenant_id,
         AssetName::from("from infrastructure stub"),
         Some(AssetId::from(1)),
         AssetTimestamp::now(),
@@ -44,20 +46,20 @@ pub struct StubAssetQuery;
 
 #[async_trait]
 impl AssetQueryPort for StubAssetQuery {
-    async fn get_asset_by_id(&self, id: AssetId) -> Option<Asset> {
+    async fn get_asset_by_id(&self, tenant_id: TenantId, id: AssetId) -> Option<Asset> {
         if id == AssetId::from(1) {
-            Some(stub_entity(id))
+            Some(stub_entity(id, tenant_id))
         } else {
             None
         }
     }
 
-    async fn list_active_assets(&self) -> Vec<Asset> {
-        vec![stub_entity(AssetId::from(1))]
+    async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<Asset> {
+        vec![stub_entity(AssetId::from(1), tenant_id)]
     }
 
-    async fn search_assets(&self, query: &AssetSearchQuery) -> Vec<Asset> {
-        self.list_active_assets()
+    async fn search_assets(&self, tenant_id: TenantId, query: &AssetSearchQuery) -> Vec<Asset> {
+        self.list_active_assets(tenant_id)
             .await
             .into_iter()
             .filter(|e| {
@@ -80,8 +82,8 @@ impl AssetQueryPort for StubAssetQuery {
             .collect()
     }
 
-    async fn list_child_assets(&self, parent_id: AssetId) -> Vec<Asset> {
-        self.list_active_assets()
+    async fn list_child_assets(&self, tenant_id: TenantId, parent_id: AssetId) -> Vec<Asset> {
+        self.list_active_assets(tenant_id)
             .await
             .into_iter()
             .filter(|e| e.parent == Some(parent_id) && e.id != parent_id)
@@ -105,21 +107,36 @@ impl Default for StubAssetCommand {
 
 #[async_trait]
 impl AssetCommandPort for StubAssetCommand {
-    async fn create_asset(&self, name: AssetName, parent: Option<AssetId>) -> Asset {
+    async fn create_asset(
+        &self,
+        tenant_id: TenantId,
+        name: AssetName,
+        parent: Option<AssetId>,
+    ) -> Result<Asset, String> {
         let id_raw = self.next_id.fetch_add(1, Ordering::Relaxed);
         let id = AssetId::from(id_raw);
-        let entity = Asset::new(id, name, parent, AssetTimestamp::now(), None);
+        let entity = Asset::new(
+            id,
+            tenant_id,
+            name,
+            parent,
+            AssetTimestamp::now(),
+            None,
+        );
 
         let mut assets = self.assets.lock().unwrap();
         assets.insert(id_raw, entity.clone());
 
-        entity
+        Ok(entity)
     }
-    async fn delete_asset(&self, id: AssetId) -> Result<(), String> {
+    async fn delete_asset(&self, tenant_id: TenantId, id: AssetId) -> Result<(), String> {
         let mut assets = self.assets.lock().map_err(|_| "Poisoned lock")?;
         let id_raw = i64::from(id);
 
         if let Some(entity) = assets.get_mut(&id_raw) {
+            if entity.tenant_id != tenant_id {
+                return Err(format!("Asset with ID {} not found", id_raw));
+            }
             if entity.is_deleted() {
                 return Err(format!("Asset with ID {} already deleted", id_raw));
             }
@@ -134,11 +151,19 @@ impl AssetCommandPort for StubAssetCommand {
             ))
         }
     }
-    async fn update_asset(&self, id: AssetId, changes: PartialAsset) -> Result<(), String> {
+    async fn update_asset(
+        &self,
+        tenant_id: TenantId,
+        id: AssetId,
+        changes: PartialAsset,
+    ) -> Result<(), String> {
         let mut storage = self.assets.lock().unwrap();
         let id_raw = i64::from(id);
 
         if let Some(entity) = storage.get_mut(&id_raw) {
+            if entity.tenant_id != tenant_id {
+                return Err("Entity not found".into());
+            }
             if let Some(new_name) = changes.name {
                 entity.name = new_name;
             }

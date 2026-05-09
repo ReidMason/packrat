@@ -3,10 +3,12 @@ pub mod models;
 pub use models::{asset_id::AssetId, asset_name::AssetName, asset_timestamp::AssetTimestamp};
 
 use crate::aggregates::partial_asset::PartialAsset;
+use crate::aggregates::tenant::TenantId;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Asset {
     pub id: AssetId,
+    pub tenant_id: TenantId,
     pub name: AssetName,
     pub parent: Option<AssetId>,
     pub created: AssetTimestamp,
@@ -16,6 +18,7 @@ pub struct Asset {
 impl Asset {
     pub fn new(
         id: AssetId,
+        tenant_id: TenantId,
         name: AssetName,
         parent: Option<AssetId>,
         created: AssetTimestamp,
@@ -23,6 +26,7 @@ impl Asset {
     ) -> Self {
         Self {
             id,
+            tenant_id,
             name,
             parent,
             created,

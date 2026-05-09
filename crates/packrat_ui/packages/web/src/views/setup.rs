@@ -20,6 +20,7 @@ fn spawn_create_user(
     mut phase: Signal<SetupPhase>,
     mut registered_user: Signal<Option<UserDto>>,
     mut auth_token: Signal<Option<String>>,
+    mut active_tenant: Signal<Option<i64>>,
 ) {
     busy.set(true);
     spawn(async move {
@@ -29,6 +30,8 @@ fn spawn_create_user(
                 match api_client::login(&base, email, password).await {
                     Ok(login) => {
                         *auth_token.write() = Some(login.token);
+                        crate::api_base::clear_tenant_id();
+                        *active_tenant.write() = None;
                         registered_user.set(Some(user.clone()));
                         phase.set(SetupPhase::RegisterWorkspace);
                         result.set(None);
@@ -57,6 +60,7 @@ fn spawn_login(
     mut registered_user: Signal<Option<UserDto>>,
     mut tenant_name: Signal<String>,
     mut tenant_result: Signal<Option<Result<TenantDto, String>>>,
+    mut active_tenant: Signal<Option<i64>>,
 ) {
     busy.set(true);
     result.set(None);
@@ -67,6 +71,8 @@ fn spawn_login(
                 registered_user.set(None);
                 tenant_name.set(String::new());
                 tenant_result.set(None);
+                crate::api_base::clear_tenant_id();
+                *active_tenant.write() = None;
                 phase.set(SetupPhase::RegisterWorkspace);
                 result.set(Some(Ok(())));
             }
@@ -82,10 +88,15 @@ fn spawn_create_tenant(
     token: Option<String>,
     mut busy: Signal<bool>,
     mut result: Signal<Option<Result<TenantDto, String>>>,
+    mut active_tenant: Signal<Option<i64>>,
 ) {
     busy.set(true);
     spawn(async move {
         let res = api_client::create_tenant(&base, name, token.as_deref()).await;
+        if let Ok(ref t) = res {
+            crate::api_base::persist_tenant_id(t.id);
+            *active_tenant.write() = Some(t.id);
+        }
         result.set(Some(res));
         busy.set(false);
     });
@@ -100,6 +111,7 @@ fn reset_registration(
     mut tenant_result: Signal<Option<Result<TenantDto, String>>>,
     mut registered_user: Signal<Option<UserDto>>,
     mut auth_token: Signal<Option<String>>,
+    mut active_tenant: Signal<Option<i64>>,
 ) {
     phase.set(SetupPhase::Choose);
     user_email.set(String::new());
@@ -109,13 +121,15 @@ fn reset_registration(
     tenant_result.set(None);
     registered_user.set(None);
     auth_token.set(None);
+    crate::api_base::clear_tenant_id();
+    *active_tenant.write() = None;
 }
 
-/// Onboarding: sign in (placeholder) or register → account email → workspace (tenant).
 #[component]
 pub fn Setup() -> Element {
     let api_base = use_context::<Signal<String>>();
     let auth_token = use_context::<Signal<Option<String>>>();
+    let active_tenant = use_context::<Signal<Option<i64>>>();
 
     let mut phase = use_signal(|| SetupPhase::Choose);
 
@@ -257,6 +271,7 @@ pub fn Setup() -> Element {
                                             registered_user,
                                             tenant_name,
                                             tenant_result,
+                                            active_tenant,
                                         );
                                     },
                                     if signin_busy() { "Signing in…" } else { "Sign in" }
@@ -279,6 +294,7 @@ pub fn Setup() -> Element {
                                     tenant_result,
                                     registered_user,
                                     auth_token,
+                                    active_tenant,
                                 );
                             },
                             "← Back"
@@ -316,6 +332,7 @@ pub fn Setup() -> Element {
                                         phase,
                                         registered_user,
                                         auth_token,
+                                        active_tenant,
                                     );
                                 },
                                 label {
@@ -426,6 +443,7 @@ pub fn Setup() -> Element {
                                             auth_token(),
                                             tenant_busy,
                                             tenant_result,
+                                            active_tenant,
                                         );
                                     },
                                     label {

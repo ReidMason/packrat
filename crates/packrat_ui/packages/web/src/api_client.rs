@@ -40,6 +40,7 @@ pub struct ReadyDto {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AssetDto {
     pub id: i64,
+    pub tenant_id: i64,
     pub name: String,
     pub parent_id: Option<i64>,
     pub created: String,
@@ -73,6 +74,10 @@ struct CreateAssetRequest {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     parent_id: Option<i64>,
+}
+
+fn tenant_assets_base(base: &str, tenant_id: i64) -> String {
+    format!("{}/api/tenants/{tenant_id}/assets", http_base(base))
 }
 
 fn normalize_base(base: &str) -> String {
@@ -181,6 +186,7 @@ struct SearchAssetsRequest {
 
 pub async fn search_assets(
     base: &str,
+    tenant_id: i64,
     fuzzyname: &str,
     token: Option<&str>,
 ) -> Result<Vec<AssetDto>, String> {
@@ -188,7 +194,7 @@ pub async fn search_assets(
     if needle.is_empty() {
         return Err("Search text must not be empty.".into());
     }
-    let url = format!("{}/api/assets/search", http_base(base));
+    let url = format!("{}/search", tenant_assets_base(base, tenant_id));
     let body = SearchAssetsRequest {
         name: None,
         fuzzyname: Some(needle.to_string()),
@@ -204,8 +210,12 @@ pub async fn search_assets(
     Ok(wrapped.data)
 }
 
-pub async fn list_assets(base: &str, token: Option<&str>) -> Result<Vec<AssetDto>, String> {
-    let url = format!("{}/api/assets", http_base(base));
+pub async fn list_assets(
+    base: &str,
+    tenant_id: i64,
+    token: Option<&str>,
+) -> Result<Vec<AssetDto>, String> {
+    let url = tenant_assets_base(base, tenant_id);
     let resp = with_bearer(reqwest::Client::new().get(&url), token)
         .send()
         .await
@@ -217,8 +227,13 @@ pub async fn list_assets(base: &str, token: Option<&str>) -> Result<Vec<AssetDto
     Ok(body.data)
 }
 
-pub async fn get_asset(base: &str, id: i64, token: Option<&str>) -> Result<AssetDto, String> {
-    let url = format!("{}/api/assets/{id}", http_base(base));
+pub async fn get_asset(
+    base: &str,
+    tenant_id: i64,
+    id: i64,
+    token: Option<&str>,
+) -> Result<AssetDto, String> {
+    let url = format!("{}/{}", tenant_assets_base(base, tenant_id), id);
     let resp = with_bearer(reqwest::Client::new().get(&url), token)
         .send()
         .await
@@ -232,10 +247,15 @@ pub async fn get_asset(base: &str, id: i64, token: Option<&str>) -> Result<Asset
 
 pub async fn list_child_assets(
     base: &str,
+    tenant_id: i64,
     parent_id: i64,
     token: Option<&str>,
 ) -> Result<Vec<AssetDto>, String> {
-    let url = format!("{}/api/assets/{parent_id}/children", http_base(base));
+    let url = format!(
+        "{}/{}/children",
+        tenant_assets_base(base, tenant_id),
+        parent_id
+    );
     let resp = with_bearer(reqwest::Client::new().get(&url), token)
         .send()
         .await
@@ -249,11 +269,12 @@ pub async fn list_child_assets(
 
 pub async fn create_asset(
     base: &str,
+    tenant_id: i64,
     name: String,
     parent_id: Option<i64>,
     token: Option<&str>,
 ) -> Result<AssetDto, String> {
-    let url = format!("{}/api/assets", http_base(base));
+    let url = tenant_assets_base(base, tenant_id);
     let body = CreateAssetRequest { name, parent_id };
     let resp = with_bearer(reqwest::Client::new().post(&url).json(&body), token)
         .send()
@@ -266,8 +287,13 @@ pub async fn create_asset(
     Ok(wrapped.data)
 }
 
-pub async fn delete_asset(base: &str, id: i64, token: Option<&str>) -> Result<(), String> {
-    let url = format!("{}/api/assets/{id}", http_base(base));
+pub async fn delete_asset(
+    base: &str,
+    tenant_id: i64,
+    id: i64,
+    token: Option<&str>,
+) -> Result<(), String> {
+    let url = format!("{}/{}", tenant_assets_base(base, tenant_id), id);
     let resp = with_bearer(reqwest::Client::new().delete(&url), token)
         .send()
         .await
