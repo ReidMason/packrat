@@ -53,7 +53,7 @@ fn AssetTagsSection(
                 "Tags"
             }
             p { class: "text-xs text-ui-text-muted leading-relaxed",
-                "Add labels for this asset. Save applies your changes to the server."
+                "Add labels for this asset. Changes apply immediately."
             }
 
             if !draft().is_empty() {
@@ -72,6 +72,32 @@ fn AssetTagsSection(
                                     let rm_id = t.id;
                                     move |_| {
                                         draft.with_mut(|v| v.retain(|x| x.id != rm_id));
+                                        let base = api_base();
+                                        let token = auth_token();
+                                        let ids: Vec<i64> =
+                                            draft().iter().map(|t| t.id).collect();
+                                        tag_busy.set(true);
+                                        tag_msg.set(None);
+                                        spawn(async move {
+                                            match api_client::set_asset_tags(
+                                                &base,
+                                                tenant_id,
+                                                asset_id,
+                                                ids,
+                                                token.as_deref(),
+                                            )
+                                            .await
+                                            {
+                                                Ok(()) => {
+                                                    on_saved.call(());
+                                                }
+                                                Err(e) => {
+                                                    tag_msg.set(Some(e));
+                                                    on_saved.call(());
+                                                }
+                                            }
+                                            tag_busy.set(false);
+                                        });
                                     }
                                 },
                                 "×"
@@ -133,6 +159,25 @@ fn AssetTagsSection(
                                         }
                                     });
                                     tag_input.write().clear();
+                                    let ids: Vec<i64> =
+                                        draft().iter().map(|t| t.id).collect();
+                                    match api_client::set_asset_tags(
+                                        &base,
+                                        tenant_id,
+                                        asset_id,
+                                        ids,
+                                        token.as_deref(),
+                                    )
+                                    .await
+                                    {
+                                        Ok(()) => {
+                                            on_saved.call(());
+                                        }
+                                        Err(e) => {
+                                            tag_msg.set(Some(e));
+                                            on_saved.call(());
+                                        }
+                                    }
                                 }
                                 Err(e) => tag_msg.set(Some(e)),
                             }
@@ -196,6 +241,32 @@ fn AssetTagsSection(
                                                                         draft.with_mut(|v| v.push(tag.clone()));
                                                                     }
                                                                     tag_input.write().clear();
+                                                                    let base = api_base();
+                                                                    let token = auth_token();
+                                                                    let ids: Vec<i64> =
+                                                                        draft().iter().map(|t| t.id).collect();
+                                                                    tag_busy.set(true);
+                                                                    tag_msg.set(None);
+                                                                    spawn(async move {
+                                                                        match api_client::set_asset_tags(
+                                                                            &base,
+                                                                            tenant_id,
+                                                                            asset_id,
+                                                                            ids,
+                                                                            token.as_deref(),
+                                                                        )
+                                                                        .await
+                                                                        {
+                                                                            Ok(()) => {
+                                                                                on_saved.call(());
+                                                                            }
+                                                                            Err(e) => {
+                                                                                tag_msg.set(Some(e));
+                                                                                on_saved.call(());
+                                                                            }
+                                                                        }
+                                                                        tag_busy.set(false);
+                                                                    });
                                                                 }
                                                             },
                                                             span { class: "min-w-0 truncate", "{s.name}" }
@@ -213,37 +284,6 @@ fn AssetTagsSection(
                         }
                     }
                 }
-            }
-
-            button {
-                r#type: "button",
-                class: "rounded-lg border border-ui-bg-dim px-4 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-dim disabled:opacity-50",
-                disabled: tag_busy(),
-                onclick: move |_| {
-                    let base = api_base();
-                    let token = auth_token();
-                    let ids: Vec<i64> = draft().iter().map(|t| t.id).collect();
-                    tag_busy.set(true);
-                    tag_msg.set(None);
-                    spawn(async move {
-                        match api_client::set_asset_tags(
-                                &base,
-                                tenant_id,
-                                asset_id,
-                                ids,
-                                token.as_deref(),
-                            )
-                            .await
-                        {
-                            Ok(()) => {
-                                on_saved.call(());
-                            }
-                            Err(e) => tag_msg.set(Some(e)),
-                        }
-                        tag_busy.set(false);
-                    });
-                },
-                if tag_busy() { "Saving…" } else { "Save tags" }
             }
 
             if let Some(m) = tag_msg() {
