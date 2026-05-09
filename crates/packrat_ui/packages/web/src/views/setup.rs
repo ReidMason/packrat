@@ -29,7 +29,8 @@ fn spawn_create_user(
             Ok(user) => {
                 match api_client::login(&base, email, password).await {
                     Ok(login) => {
-                        *auth_token.write() = Some(login.token);
+                        *auth_token.write() = Some(login.token.clone());
+                        crate::api_base::persist_auth_token(&login.token);
                         crate::api_base::clear_tenant_id();
                         *active_tenant.write() = None;
                         registered_user.set(Some(user.clone()));
@@ -67,7 +68,8 @@ fn spawn_login(
     spawn(async move {
         match api_client::login(&base, email, password).await {
             Ok(d) => {
-                *auth_token.write() = Some(d.token);
+                *auth_token.write() = Some(d.token.clone());
+                crate::api_base::persist_auth_token(&d.token);
                 registered_user.set(None);
                 tenant_name.set(String::new());
                 tenant_result.set(None);
@@ -121,6 +123,7 @@ fn reset_registration(
     tenant_result.set(None);
     registered_user.set(None);
     auth_token.set(None);
+    crate::api_base::clear_auth_token();
     crate::api_base::clear_tenant_id();
     *active_tenant.write() = None;
 }

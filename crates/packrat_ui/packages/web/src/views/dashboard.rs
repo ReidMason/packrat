@@ -63,7 +63,7 @@ pub fn Dashboard() -> Element {
                         },
                         None => rsx! {
                             p { class: "mt-4 text-sm text-ui-text-muted",
-                                "Create a workspace in Setup to add assets."
+                                "Create a workspace in Account to add assets."
                             }
                         },
                     }
@@ -87,7 +87,7 @@ pub fn Dashboard() -> Element {
                             }
                             let Some(tenant_id) = active_tenant() else {
                                 search_results.set(Some(Err(
-                                    "Choose a workspace in Setup first.".into(),
+                                    "Choose a workspace under Account first.".into(),
                                 )));
                                 return;
                             };

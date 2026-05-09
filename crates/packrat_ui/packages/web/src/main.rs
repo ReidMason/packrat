@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use ui::TailwindConfig;
 use views::recent_store;
-use views::{AssetDetail, DebugPage, Home, NewAsset, Setup};
+use views::{AssetDetail, DebugPage, Home, Login, NewAsset};
 
 mod api_base;
 mod api_client;
@@ -10,6 +10,8 @@ mod views;
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 enum Route {
+    #[route("/login")]
+    Login {},
     #[layout(AppShell)]
     #[route("/")]
     Home {},
@@ -19,8 +21,6 @@ enum Route {
     AssetDetail { tenant_id: i64, id: i64 },
     #[route("/debug")]
     DebugPage {},
-    #[route("/setup")]
-    Setup {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -31,25 +31,45 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    rsx! {
-        document::Link { rel: "icon", href: FAVICON }
-        TailwindConfig {
-            Router::<Route> {}
-        }
-
-    }
-}
-
-#[component]
-fn AppShell() -> Element {
     let api_base = use_signal(crate::api_base::initial_api_base);
     let recent = use_signal(|| recent_store::load_recent_disk());
-    let auth_token = use_signal(|| None::<String>);
+    let auth_token = use_signal(|| crate::api_base::initial_auth_token());
     let active_tenant = use_signal(|| crate::api_base::initial_tenant_id());
     use_context_provider(|| api_base);
     use_context_provider(|| recent);
     use_context_provider(|| auth_token);
     use_context_provider(|| active_tenant);
+
+    rsx! {
+        document::Link { rel: "icon", href: FAVICON }
+        TailwindConfig {
+            Router::<Route> {}
+        }
+    }
+}
+
+#[component]
+fn AppShell() -> Element {
+    let mut auth_token = use_context::<Signal<Option<String>>>();
+    let mut active_tenant = use_context::<Signal<Option<i64>>>();
+    let nav = use_navigator();
+
+    use_hook(move || {
+        if auth_token().is_none() {
+            spawn(async move {
+                nav.replace(Route::Login {});
+            });
+        }
+    });
+
+    if auth_token().is_none() {
+        return rsx! {
+            div {
+                class: "min-h-screen flex items-center justify-center bg-ui-bg text-ui-text",
+                p { class: "text-sm text-ui-text-muted", "Redirecting to sign in…" }
+            }
+        };
+    }
 
     rsx! {
         div {
@@ -83,20 +103,32 @@ fn AppShell() -> Element {
                             None => rsx! {
                                 p {
                                     class: "rounded-lg px-3 py-2 text-sm text-ui-text-muted",
-                                    "New asset — set workspace in Setup"
+                                    "New asset — add a workspace in Account"
                                 }
                             },
                         }
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
-                        to: Route::Setup {},
-                        "Setup"
+                        to: Route::Login {},
+                        "Account"
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
                         to: Route::DebugPage {},
                         "Debug"
+                    }
+                    button {
+                        r#type: "button",
+                        class: "mt-4 rounded-lg px-3 py-2 text-sm font-medium text-ui-error hover:bg-ui-error/10 text-left",
+                        onclick: move |_| {
+                            crate::api_base::clear_auth_token();
+                            crate::api_base::clear_tenant_id();
+                            *auth_token.write() = None;
+                            *active_tenant.write() = None;
+                            nav.push(Route::Login {});
+                        },
+                        "Sign out"
                     }
                 }
             }
@@ -125,13 +157,25 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",
-                        to: Route::Setup {},
-                        "Setup"
+                        to: Route::Login {},
+                        "Account"
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",
                         to: Route::DebugPage {},
                         "Debug"
+                    }
+                    button {
+                        r#type: "button",
+                        class: "text-sm font-medium text-ui-error",
+                        onclick: move |_| {
+                            crate::api_base::clear_auth_token();
+                            crate::api_base::clear_tenant_id();
+                            *auth_token.write() = None;
+                            *active_tenant.write() = None;
+                            nav.push(Route::Login {});
+                        },
+                        "Sign out"
                     }
                 }
                 main {
