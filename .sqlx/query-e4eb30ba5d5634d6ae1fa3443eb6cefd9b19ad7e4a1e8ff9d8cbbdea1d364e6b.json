@@ -1,16 +1,17 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE assets SET name = $1, parent_id = $2 WHERE id = $3",
+  "query": "UPDATE assets SET name = $1, parent_id = $2 WHERE id = $3 AND tenant_id = $4",
   "describe": {
     "columns": [],
     "parameters": {
       "Left": [
         "Text",
         "Int8",
+        "Int8",
         "Int8"
       ]
     },
     "nullable": []
   },
-  "hash": "7c6b010a66bf31e263c5331367bd3567bec3d60632c288f1ce07d594d7a59874"
+  "hash": "e4eb30ba5d5634d6ae1fa3443eb6cefd9b19ad7e4a1e8ff9d8cbbdea1d364e6b"
 }
