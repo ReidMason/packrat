@@ -8,5 +8,5 @@ pub use asset::{
     update_asset,
 };
 pub use health::check_readiness;
-pub use tenant::create_tenant;
+pub use tenant::{create_tenant, list_tenants_for_user};
 pub use user::{CreateUserUseCase, LoginResponse, LoginUseCase};

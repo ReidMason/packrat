@@ -12,7 +12,7 @@ use crate::handlers::assets::{
 use crate::handlers::auth::login_handler;
 use crate::handlers::health::health_handler;
 use crate::handlers::ready::ready_handler;
-use crate::handlers::tenants::create_tenant_handler;
+use crate::handlers::tenants::{create_tenant_handler, list_my_tenants_handler};
 use crate::handlers::users::create_user_handler;
 use crate::middleware::require_session;
 use crate::state::AppState;
@@ -28,6 +28,7 @@ fn api_router(state: AppState) -> Router {
 
     let protected = Router::new()
         .route("/tenants", post(create_tenant_handler))
+        .route("/me/tenants", get(list_my_tenants_handler))
         .route(
             "/tenants/{tenant_id}/assets/search",
             post(search_assets_handler),

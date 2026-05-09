@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use packrat_domain::tenant::{Tenant, TenantName};
+use packrat_domain::user::UserId;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TenantCommandError {
@@ -18,5 +19,9 @@ impl std::error::Error for TenantCommandError {}
 
 #[async_trait]
 pub trait TenantCommandPort: Send + Sync {
-    async fn create_tenant(&self, name: TenantName) -> Result<Tenant, TenantCommandError>;
+    async fn create_tenant(
+        &self,
+        user_id: UserId,
+        name: TenantName,
+    ) -> Result<Tenant, TenantCommandError>;
 }

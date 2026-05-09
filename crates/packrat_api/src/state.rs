@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use packrat_infrastructure::{
     PostgresAssetCommand, PostgresAssetQuery, PostgresReadiness, PostgresTenantCommand,
-    PostgresUserCommand, PostgresUserQuery, PostgresUserSessionCommand, PostgresUserSessionQuery,
+    PostgresTenantQuery, PostgresUserCommand, PostgresUserQuery, PostgresUserSessionCommand,
+    PostgresUserSessionQuery,
 };
 
 #[derive(Clone)]
@@ -15,4 +16,5 @@ pub struct AppState {
     pub user_session_command: Arc<PostgresUserSessionCommand>,
     pub user_session_query: Arc<PostgresUserSessionQuery>,
     pub tenant_command: Arc<PostgresTenantCommand>,
+    pub tenant_query: Arc<PostgresTenantQuery>,
 }
