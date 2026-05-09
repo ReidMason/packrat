@@ -360,6 +360,19 @@ pub async fn login(base: &str, email: String, password: String) -> Result<LoginD
     Ok(wrapped.data)
 }
 
+pub async fn list_my_tenants(base: &str, token: Option<&str>) -> Result<Vec<TenantDto>, String> {
+    let url = format!("{}/api/me/tenants", http_base(base));
+    let resp = with_bearer(reqwest::Client::new().get(&url), token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let body: SuccessBody<Vec<TenantDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(body.data)
+}
+
 pub async fn create_tenant(
     base: &str,
     name: String,
