@@ -166,6 +166,15 @@ mod tests {
             q.user_has_permission(
                 UserId::from(uid),
                 TenantId::from(tid),
+                PermissionSlug::AssetsRead
+            )
+            .await
+            .unwrap()
+        );
+        assert!(
+            q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
                 PermissionSlug::AssetsDelete
             )
             .await
