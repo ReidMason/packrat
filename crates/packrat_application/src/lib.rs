@@ -2,8 +2,8 @@ pub mod ports;
 pub mod use_cases;
 
 pub use ports::{
-    AssetCommandPort, AssetQueryPort, AssetSearchQuery, ReadinessPort, TenantCommandError,
-    TenantCommandPort, TenantMembershipQueryPort, UserCommandError, UserCommandPort,
+    AssetCommandPort, AssetQueryPort, AssetSearchQuery, AuthorizationQueryPort, ReadinessPort,
+    TenantCommandError, TenantCommandPort, TenantMembershipQueryPort, UserCommandError, UserCommandPort,
     UserQueryError, UserQueryPort, UserSessionCommandError, UserSessionCommandPort,
     UserSessionQueryError, UserSessionQueryPort,
 };

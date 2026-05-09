@@ -1,6 +1,7 @@
 mod asset_command_port;
 mod asset_query_port;
 mod asset_search_query;
+mod authorization_query_port;
 mod readiness_port;
 mod tenant_command_port;
 mod tenant_membership_query_port;
@@ -12,6 +13,7 @@ mod user_session_query_port;
 pub use asset_command_port::AssetCommandPort;
 pub use asset_query_port::AssetQueryPort;
 pub use asset_search_query::AssetSearchQuery;
+pub use authorization_query_port::AuthorizationQueryPort;
 pub use readiness_port::ReadinessPort;
 pub use tenant_command_port::{TenantCommandError, TenantCommandPort};
 pub use tenant_membership_query_port::TenantMembershipQueryPort;
