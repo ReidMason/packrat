@@ -11,7 +11,6 @@ fn AssetTagsSection(
     tenant_id: i64,
     asset_id: i64,
     server_tags: Vec<TagDto>,
-    revision: u32,
     on_saved: EventHandler<()>,
 ) -> Element {
     let api_base = use_context::<Signal<String>>();
@@ -23,9 +22,11 @@ fn AssetTagsSection(
     let mut tag_busy = use_signal(|| false);
     let mut tag_msg = use_signal(|| Option::<String>::None);
 
-    let server_tags_for_sync = server_tags.clone();
-    use_effect(use_reactive((&revision, &asset_id), move |_| {
-        draft.set(server_tags_for_sync.clone());
+    let mut tag_sig: Vec<i64> = server_tags.iter().map(|t| t.id).collect();
+    tag_sig.sort_unstable();
+    let server_tags_sync = server_tags.clone();
+    use_effect(use_reactive((&asset_id, &tag_sig), move |_| {
+        draft.set(server_tags_sync.clone());
     }));
 
     // Signals must be read inside the async future so `use_resource` subscribes (see dioxus use_resource docs).
@@ -402,7 +403,6 @@ pub fn AssetDetail(tenant_id: i64, id: i64) -> Element {
                                 tenant_id: route_tid,
                                 asset_id,
                                 server_tags: tags_snapshot,
-                                revision: refresh_gen(),
                                 on_saved: move |_| {
                                     refresh_gen.set(refresh_gen() + 1);
                                 },
