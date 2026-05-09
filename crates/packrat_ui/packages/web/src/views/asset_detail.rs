@@ -4,6 +4,8 @@ use super::recent_store::{self, RecentBrief};
 use crate::api_client::{self, AssetDto, SearchTagsRequest, TagDto};
 use crate::Route;
 
+const TAG_SUGGESTION_ROWS: usize = 5;
+
 #[component]
 fn AssetTagsSection(
     tenant_id: i64,
@@ -47,9 +49,9 @@ fn AssetTagsSection(
 
     rsx! {
         div {
-            class: "pt-4 border-t border-ui-bg-dim space-y-4",
+            class: "pt-2 border-t border-ui-bg-dim space-y-2",
             h2 {
-                class: "text-sm font-semibold text-ui-text mb-2",
+                class: "text-sm font-semibold text-ui-text",
                 "Tags"
             }
             p { class: "text-xs text-ui-text-muted leading-relaxed",
@@ -108,84 +110,86 @@ fn AssetTagsSection(
             }
 
             div {
-                class: "flex flex-col sm:flex-row gap-2 sm:items-end",
-                label {
-                    class: "flex-1 flex flex-col gap-1.5 text-xs text-ui-text-muted",
-                    span { "Add tag" }
+                class: "mt-2 flex flex-col gap-2",
+                span { class: "text-xs font-medium text-ui-text-muted tracking-wide",
+                    "Find or create a tag"
+                }
+                div {
+                    class: "flex gap-1.5 rounded-xl border border-ui-secondary/25 bg-ui-bg-dim/90 p-1 pl-1.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]",
                     input {
-                        class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
-                        placeholder: "Type to search or create…",
+                        class: "min-w-0 flex-1 rounded-lg border-0 bg-transparent px-2.5 py-2 text-sm text-ui-text placeholder:text-ui-text-dim outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-ui-bg-dim",
+                        placeholder: "Search tags or type a new name…",
                         value: "{tag_input}",
                         onfocus: move |_| tag_focused.set(true),
                         onblur: move |_| tag_focused.set(false),
                         oninput: move |e| *tag_input.write() = e.value(),
                     }
-                }
-                button {
-                    r#type: "button",
-                    class: "shrink-0 rounded-lg bg-ui-secondary text-ui-bg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50",
-                    disabled: tag_busy(),
-                    onclick: move |_| {
-                        let base = api_base();
-                        let token = auth_token();
-                        let raw = tag_input().trim().to_string();
-                        if raw.is_empty() {
-                            return;
-                        }
-                        if draft().iter().any(|x| x.name.eq_ignore_ascii_case(&raw)) {
-                            tag_input.write().clear();
-                            return;
-                        }
-                        let pick = sug_res()
-                            .and_then(|r| r.clone().ok())
-                            .and_then(|list| {
-                                list.into_iter()
-                                    .find(|x| x.name.eq_ignore_ascii_case(&raw))
-                            });
-                        tag_busy.set(true);
-                        tag_msg.set(None);
-                        spawn(async move {
-                            let res = if let Some(t) = pick {
-                                Ok(t)
-                            } else {
-                                api_client::ensure_tag(&base, tenant_id, raw.clone(), token.as_deref())
-                                    .await
-                            };
-                            match res {
-                                Ok(t) => {
-                                    draft.with_mut(|v| {
-                                        if !v.iter().any(|x| x.id == t.id) {
-                                            v.push(t);
-                                        }
-                                    });
-                                    tag_input.write().clear();
-                                    let ids: Vec<i64> =
-                                        draft().iter().map(|t| t.id).collect();
-                                    match api_client::set_asset_tags(
-                                        &base,
-                                        tenant_id,
-                                        asset_id,
-                                        ids,
-                                        token.as_deref(),
-                                    )
-                                    .await
-                                    {
-                                        Ok(()) => {
-                                            on_saved.call(());
-                                        }
-                                        Err(e) => {
-                                            tag_msg.set(Some(e));
-                                            on_saved.call(());
+                    button {
+                        r#type: "button",
+                        class: "shrink-0 self-center rounded-lg bg-ui-secondary px-4 py-2 text-sm font-semibold text-ui-bg shadow-sm shadow-ui-secondary/10 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:hover:brightness-100 disabled:active:scale-100",
+                        disabled: tag_busy(),
+                        onclick: move |_| {
+                            let base = api_base();
+                            let token = auth_token();
+                            let raw = tag_input().trim().to_string();
+                            if raw.is_empty() {
+                                return;
+                            }
+                            if draft().iter().any(|x| x.name.eq_ignore_ascii_case(&raw)) {
+                                tag_input.write().clear();
+                                return;
+                            }
+                            let pick = sug_res()
+                                .and_then(|r| r.clone().ok())
+                                .and_then(|list| {
+                                    list.into_iter()
+                                        .find(|x| x.name.eq_ignore_ascii_case(&raw))
+                                });
+                            tag_busy.set(true);
+                            tag_msg.set(None);
+                            spawn(async move {
+                                let res = if let Some(t) = pick {
+                                    Ok(t)
+                                } else {
+                                    api_client::ensure_tag(&base, tenant_id, raw.clone(), token.as_deref())
+                                        .await
+                                };
+                                match res {
+                                    Ok(t) => {
+                                        draft.with_mut(|v| {
+                                            if !v.iter().any(|x| x.id == t.id) {
+                                                v.push(t);
+                                            }
+                                        });
+                                        tag_input.write().clear();
+                                        let ids: Vec<i64> =
+                                            draft().iter().map(|t| t.id).collect();
+                                        match api_client::set_asset_tags(
+                                            &base,
+                                            tenant_id,
+                                            asset_id,
+                                            ids,
+                                            token.as_deref(),
+                                        )
+                                        .await
+                                        {
+                                            Ok(()) => {
+                                                on_saved.call(());
+                                            }
+                                            Err(e) => {
+                                                tag_msg.set(Some(e));
+                                                on_saved.call(());
+                                            }
                                         }
                                     }
+                                    Err(e) => tag_msg.set(Some(e)),
                                 }
-                                Err(e) => tag_msg.set(Some(e)),
-                            }
-                            tag_busy.set(false);
-                        });
-                    },
+                                tag_busy.set(false);
+                            });
+                        },
                     if tag_busy() { "Adding…" } else { "Add" }
                 }
+            }
             }
 
             {
@@ -207,33 +211,44 @@ fn AssetTagsSection(
                                     .iter()
                                     .filter(|s| !applied_ids.contains(&s.id))
                                     .cloned()
-                                    .take(12)
+                                    .take(TAG_SUGGESTION_ROWS)
                                     .collect();
                                 let all_matched_applied =
                                     !list.is_empty() && filtered.is_empty();
                                 rsx! {
                                     if all_matched_applied {
-                                        p { class: "text-xs text-ui-text-muted rounded-lg border border-dashed border-ui-bg-dim bg-ui-bg-dim/20 px-3 py-2",
+                                        p { class: "text-xs leading-relaxed text-ui-text-muted rounded-xl border border-dashed border-ui-secondary/25 bg-ui-bg-dim/40 px-3 py-2",
                                             "Every tag that matches is already on this asset."
                                         }
                                     }
                                     if !filtered.is_empty() {
                                         div {
-                                            class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent shadow-sm ring-1 ring-black/5 dark:ring-white/5 max-h-36 overflow-y-auto",
+                                            class: "mt-2 overflow-hidden rounded-xl border border-ui-bg-dim bg-ui-bg-accent shadow-md shadow-black/20",
                                             onmousedown: move |evt| evt.prevent_default(),
-                                            div { class: "sticky top-0 z-10 border-b border-ui-bg-dim bg-ui-bg-accent px-3 py-2",
-                                                p { class: "text-[11px] font-semibold uppercase tracking-wide text-ui-text-muted",
-                                                    if q.is_empty() { "Tags in this workspace" } else { "Matching tags" }
+                                            div {
+                                                class: "border-b border-ui-bg-dim bg-ui-bg-accent px-3 py-2",
+                                                p {
+                                                    class: "text-xs font-semibold leading-tight text-ui-text",
+                                                    if q.is_empty() {
+                                                        "Suggestions"
+                                                    } else {
+                                                        "Matching tags"
+                                                    }
                                                 }
-                                                p { class: "text-[10px] text-ui-text-muted mt-0.5", "Click a row to add" }
+                                                p {
+                                                    class: "mt-0.5 max-w-prose text-[11px] leading-snug text-ui-text-dim",
+                                                    "Pick below or type a new name and Add."
+                                                }
                                             }
-                                            ul { class: "divide-y divide-ui-bg-dim p-1",
+                                            ul {
+                                                class: "max-h-36 overflow-y-auto px-1.5 py-1.5",
                                                 for s in filtered.iter() {
                                                     li {
                                                         key: "{s.id}",
+                                                        class: "py-px",
                                                         button {
                                                             r#type: "button",
-                                                            class: "group flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ui-text transition-colors hover:bg-ui-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-ui-bg-accent",
+                                                            class: "group flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-ui-secondary/18 active:bg-ui-secondary/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-ui-bg-accent",
                                                             onclick: {
                                                                 let tag = s.clone();
                                                                 move |_| {
@@ -269,9 +284,9 @@ fn AssetTagsSection(
                                                                     });
                                                                 }
                                                             },
-                                                            span { class: "min-w-0 truncate", "{s.name}" }
-                                                            span { class: "shrink-0 rounded bg-ui-bg-dim px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ui-text-muted transition-colors group-hover:bg-ui-primary/20 group-hover:text-ui-primary",
-                                                                "Add"
+                                                            span {
+                                                                class: "min-w-0 flex-1 truncate text-sm font-medium text-ui-text",
+                                                                "{s.name}"
                                                             }
                                                         }
                                                     }
@@ -366,7 +381,7 @@ pub fn AssetDetail(tenant_id: i64, id: i64) -> Element {
                     let tags_snapshot = asset.tags.clone();
                     rsx! {
                         section {
-                            class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-6 space-y-5",
+                            class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent p-5 space-y-4",
                             h1 {
                                 class: "text-2xl font-semibold text-ui-text tracking-tight",
                                 "{name}"
@@ -394,9 +409,9 @@ pub fn AssetDetail(tenant_id: i64, id: i64) -> Element {
                             }
 
                             div {
-                                class: "pt-4 border-t border-ui-bg-dim",
+                                class: "pt-2 border-t border-ui-bg-dim",
                                 h2 {
-                                    class: "text-sm font-semibold text-ui-text mb-3",
+                                    class: "text-sm font-semibold text-ui-text mb-2",
                                     "Nested assets"
                                 }
                                 if children.is_empty() {
@@ -420,7 +435,7 @@ pub fn AssetDetail(tenant_id: i64, id: i64) -> Element {
                             }
 
                             div {
-                                class: "pt-4 border-t border-ui-bg-dim space-y-4",
+                                class: "pt-2 border-t border-ui-bg-dim space-y-4",
 
                                 if delete_confirm() {
                                     p { class: "text-sm text-ui-text",
