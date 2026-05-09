@@ -269,7 +269,7 @@ impl AssetQueryPort for PostgresAssetQuery {
 
     async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<AssetWithTags> {
         let rows = sqlx::query!(
-            "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 ORDER BY LOWER(name) ASC",
+            "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 ORDER BY (parent_id IS NULL) DESC, LOWER(name) ASC",
             i64::from(tenant_id),
         )
         .fetch_all(&self.pool)
@@ -316,7 +316,7 @@ impl AssetQueryPort for PostgresAssetQuery {
                WHERE deleted IS NULL AND tenant_id = $1
                  AND ($2::text IS NULL OR name = $2)
                  AND ($3::text IS NULL OR strpos(lower(name), lower($3)) > 0)
-               ORDER BY LOWER(name) ASC"#,
+               ORDER BY (parent_id IS NULL) DESC, LOWER(name) ASC"#,
             i64::from(tenant_id),
             name as Option<String>,
             fuzzy as Option<String>,

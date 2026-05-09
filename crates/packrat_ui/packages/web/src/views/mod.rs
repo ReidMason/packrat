@@ -1,5 +1,7 @@
 mod account;
+mod asset_browse;
 mod asset_detail;
+mod asset_row;
 mod dashboard;
 mod debug;
 mod home;
@@ -9,6 +11,7 @@ pub mod recent_store;
 mod setup;
 
 pub use account::Account;
+pub use asset_browse::AssetBrowse;
 pub use asset_detail::AssetDetail;
 pub use debug::DebugPage;
 pub use home::Home;
