@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tags (tenant_id, name, normalized)\n               VALUES ($1, $2, $3)\n               ON CONFLICT (tenant_id, normalized) DO NOTHING\n               RETURNING id, tenant_id, name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "tenant_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "578105adcf1d89d3a540a6b32843ddaa04c5d5c2bf2965d9a3d25771f0204783"
+}
