@@ -65,8 +65,6 @@ dev platform="web":
     echo "Starting UI for {{platform}}..."
     just ui serve-{{platform}}
 
-# Regenerate `.sqlx/` after changing `query_*!` SQL or migrations.
-# Needs Postgres up (e.g. `docker compose up -d postgres`)
 [group('database')]
 sqlx-prepare:
     #!/usr/bin/env bash

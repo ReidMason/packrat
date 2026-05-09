@@ -9,7 +9,7 @@ use packrat_domain::asset::{AssetId, AssetName};
 use packrat_domain::tenant::TenantId;
 use packrat_domain::PermissionSlug;
 
-use crate::authz::ensure_tenant_permission;
+use crate::authorization::ensure_tenant_permission;
 use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
 use crate::middleware::AuthSession;
 use crate::state::AppState;

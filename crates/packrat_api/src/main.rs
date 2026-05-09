@@ -1,5 +1,5 @@
 mod app;
-mod authz;
+mod authorization;
 mod dto;
 mod handlers;
 mod middleware;

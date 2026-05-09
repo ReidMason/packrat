@@ -91,7 +91,7 @@ mod tests {
 
     #[sqlx::test]
     async fn viewer_has_assets_read_not_write(pool: PgPool) {
-        let uid = insert_user(&pool, "authz-viewer@example.com").await;
+        let uid = insert_user(&pool, "authorization-viewer@example.com").await;
         let tid = sqlx::query_scalar!(
             "INSERT INTO tenants (name) VALUES ($1) RETURNING id",
             "Authz Tenant",
@@ -130,7 +130,7 @@ mod tests {
 
     #[sqlx::test]
     async fn owner_has_assets_delete(pool: PgPool) {
-        let uid = insert_user(&pool, "authz-owner@example.com").await;
+        let uid = insert_user(&pool, "authorization-owner@example.com").await;
         let tid = sqlx::query_scalar!(
             "INSERT INTO tenants (name) VALUES ($1) RETURNING id",
             "Owner Tenant",
@@ -164,7 +164,7 @@ mod tests {
 
     #[sqlx::test]
     async fn user_without_role_has_no_permission(pool: PgPool) {
-        let uid = insert_user(&pool, "authz-norole@example.com").await;
+        let uid = insert_user(&pool, "authorization-norole@example.com").await;
         let tid = sqlx::query_scalar!(
             "INSERT INTO tenants (name) VALUES ($1) RETURNING id",
             "Lonely Tenant",
