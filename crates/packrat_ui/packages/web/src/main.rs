@@ -41,6 +41,7 @@ fn App() -> Element {
     use_context_provider(|| active_tenant);
 
     rsx! {
+        document::Title { "packrat" }
         document::Link { rel: "icon", href: FAVICON }
         TailwindConfig {
             Router::<Route> {}
