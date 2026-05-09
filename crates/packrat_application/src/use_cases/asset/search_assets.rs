@@ -1,13 +1,13 @@
-use packrat_domain::asset::Asset;
 use packrat_domain::tenant::TenantId;
 
+use crate::asset_with_tags::AssetWithTags;
 use crate::ports::{AssetQueryPort, AssetSearchQuery};
 
 pub async fn execute(
     port: &impl AssetQueryPort,
     tenant_id: TenantId,
     query: &AssetSearchQuery,
-) -> Vec<Asset> {
+) -> Vec<AssetWithTags> {
     port.search_assets(tenant_id, query).await
 }
 
@@ -18,21 +18,30 @@ mod tests {
     use packrat_domain::tenant::TenantId;
 
     use super::*;
-    use crate::ports::AssetQueryPort;
+    use crate::ports::{AssetQueryPort, AssetSearchQuery};
+    use packrat_domain::asset::Asset;
 
-    struct MockPort(Vec<Asset>);
+    struct MockPort(Vec<AssetWithTags>);
 
     #[async_trait]
     impl AssetQueryPort for MockPort {
-        async fn get_asset_by_id(&self, _tenant_id: TenantId, _id: AssetId) -> Option<Asset> {
+        async fn get_asset_by_id(
+            &self,
+            _tenant_id: TenantId,
+            _id: AssetId,
+        ) -> Option<AssetWithTags> {
             None
         }
 
-        async fn list_active_assets(&self, _tenant_id: TenantId) -> Vec<Asset> {
+        async fn list_active_assets(&self, _tenant_id: TenantId) -> Vec<AssetWithTags> {
             self.0.clone()
         }
 
-        async fn search_assets(&self, _tenant_id: TenantId, query: &AssetSearchQuery) -> Vec<Asset> {
+        async fn search_assets(
+            &self,
+            _tenant_id: TenantId,
+            query: &AssetSearchQuery,
+        ) -> Vec<AssetWithTags> {
             self.0
                 .iter()
                 .filter(|e| {
@@ -41,14 +50,20 @@ mod tests {
                         .as_deref()
                         .map(str::trim)
                         .filter(|s| !s.is_empty())
-                        .map(|n| e.name.as_str() == n)
+                        .map(|n| e.asset.name.as_str() == n)
                         .unwrap_or(true);
                     let fuzzy_ok = query
                         .fuzzyname
                         .as_deref()
                         .map(str::trim)
                         .filter(|s| !s.is_empty())
-                        .map(|n| e.name.as_str().to_lowercase().contains(&n.to_lowercase()))
+                        .map(|n| {
+                            e.asset
+                                .name
+                                .as_str()
+                                .to_lowercase()
+                                .contains(&n.to_lowercase())
+                        })
                         .unwrap_or(true);
                     name_ok && fuzzy_ok
                 })
@@ -59,24 +74,23 @@ mod tests {
         async fn list_child_assets(
             &self,
             _tenant_id: TenantId,
-            parent_id: AssetId,
-        ) -> Vec<Asset> {
-            self.0
-                .iter()
-                .filter(|e| e.parent == Some(parent_id))
-                .cloned()
-                .collect()
+            _parent_id: AssetId,
+        ) -> Vec<AssetWithTags> {
+            Vec::new()
         }
     }
 
-    fn entity(id: i64, name: &str) -> Asset {
-        Asset::new(
-            id.into(),
-            TenantId::from(1),
-            AssetName::from(name),
-            None,
-            AssetTimestamp::static_for_tests(),
-            None,
+    fn entity(id: i64, name: &str) -> AssetWithTags {
+        AssetWithTags::new(
+            Asset::new(
+                id.into(),
+                TenantId::from(1),
+                AssetName::from(name),
+                None,
+                AssetTimestamp::static_for_tests(),
+                None,
+            ),
+            vec![],
         )
     }
 

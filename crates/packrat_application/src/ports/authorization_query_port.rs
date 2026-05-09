@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use packrat_domain::PermissionSlug;
 use packrat_domain::tenant::TenantId;
 use packrat_domain::user::UserId;
-use packrat_domain::PermissionSlug;
 
 #[async_trait]
 pub trait AuthorizationQueryPort: Send + Sync {

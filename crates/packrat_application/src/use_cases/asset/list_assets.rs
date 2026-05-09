@@ -1,9 +1,9 @@
-use packrat_domain::asset::Asset;
 use packrat_domain::tenant::TenantId;
 
+use crate::asset_with_tags::AssetWithTags;
 use crate::ports::AssetQueryPort;
 
-pub async fn execute(port: &impl AssetQueryPort, tenant_id: TenantId) -> Vec<Asset> {
+pub async fn execute(port: &impl AssetQueryPort, tenant_id: TenantId) -> Vec<AssetWithTags> {
     port.list_active_assets(tenant_id).await
 }
 
@@ -14,25 +14,30 @@ mod tests {
     use packrat_domain::tenant::TenantId;
 
     use super::*;
-    use crate::ports::AssetQueryPort;
+    use crate::ports::{AssetQueryPort, AssetSearchQuery};
+    use packrat_domain::asset::Asset;
 
-    struct MockPort(Vec<Asset>);
+    struct MockPort(Vec<AssetWithTags>);
 
     #[async_trait]
     impl AssetQueryPort for MockPort {
-        async fn get_asset_by_id(&self, _tenant_id: TenantId, _id: AssetId) -> Option<Asset> {
+        async fn get_asset_by_id(
+            &self,
+            _tenant_id: TenantId,
+            _id: AssetId,
+        ) -> Option<AssetWithTags> {
             None
         }
 
-        async fn list_active_assets(&self, _tenant_id: TenantId) -> Vec<Asset> {
+        async fn list_active_assets(&self, _tenant_id: TenantId) -> Vec<AssetWithTags> {
             self.0.clone()
         }
 
         async fn search_assets(
             &self,
             _tenant_id: TenantId,
-            _query: &crate::ports::AssetSearchQuery,
-        ) -> Vec<Asset> {
+            _query: &AssetSearchQuery,
+        ) -> Vec<AssetWithTags> {
             Vec::new()
         }
 
@@ -40,19 +45,22 @@ mod tests {
             &self,
             _tenant_id: TenantId,
             _parent_id: AssetId,
-        ) -> Vec<Asset> {
+        ) -> Vec<AssetWithTags> {
             Vec::new()
         }
     }
 
-    fn entity(id: i64, name: &str) -> Asset {
-        Asset::new(
-            id.into(),
-            TenantId::from(1),
-            AssetName::from(name),
-            None,
-            AssetTimestamp::static_for_tests(),
-            None,
+    fn entity(id: i64, name: &str) -> AssetWithTags {
+        AssetWithTags::new(
+            Asset::new(
+                id.into(),
+                TenantId::from(1),
+                AssetName::from(name),
+                None,
+                AssetTimestamp::static_for_tests(),
+                None,
+            ),
+            vec![],
         )
     }
 

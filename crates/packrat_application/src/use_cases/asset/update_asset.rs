@@ -1,5 +1,5 @@
-use packrat_domain::asset::AssetId;
 use packrat_domain::aggregates::partial_asset::PartialAsset;
+use packrat_domain::asset::AssetId;
 use packrat_domain::tenant::TenantId;
 
 use crate::ports::AssetCommandPort;

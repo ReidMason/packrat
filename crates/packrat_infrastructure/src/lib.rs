@@ -2,6 +2,7 @@
 
 mod postgres;
 mod postgres_authorization;
+mod postgres_tags;
 mod postgres_tenant;
 mod postgres_user;
 mod postgres_user_session;
@@ -20,15 +21,16 @@ pub use postgres::{
     PostgresAssetCommand, PostgresAssetQuery, connect_pool, ping_database, run_migrations,
 };
 pub use postgres_authorization::PostgresAuthorizationQuery;
+pub use postgres_tags::PostgresTags;
 pub use postgres_tenant::{PostgresTenantCommand, PostgresTenantQuery};
 pub use postgres_user::{PostgresUserCommand, PostgresUserQuery};
 pub use postgres_user_session::{PostgresUserSessionCommand, PostgresUserSessionQuery};
 pub use readiness::PostgresReadiness;
 
-use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
+use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery, AssetWithTags};
 use packrat_domain::{
-    asset::{Asset, AssetId, AssetName, AssetTimestamp},
     aggregates::partial_asset::PartialAsset,
+    asset::{Asset, AssetId, AssetName, AssetTimestamp},
     tenant::TenantId,
 };
 
@@ -48,19 +50,26 @@ pub struct StubAssetQuery;
 
 #[async_trait]
 impl AssetQueryPort for StubAssetQuery {
-    async fn get_asset_by_id(&self, tenant_id: TenantId, id: AssetId) -> Option<Asset> {
+    async fn get_asset_by_id(&self, tenant_id: TenantId, id: AssetId) -> Option<AssetWithTags> {
         if id == AssetId::from(1) {
-            Some(stub_entity(id, tenant_id))
+            Some(AssetWithTags::new(stub_entity(id, tenant_id), vec![]))
         } else {
             None
         }
     }
 
-    async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<Asset> {
-        vec![stub_entity(AssetId::from(1), tenant_id)]
+    async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<AssetWithTags> {
+        vec![AssetWithTags::new(
+            stub_entity(AssetId::from(1), tenant_id),
+            vec![],
+        )]
     }
 
-    async fn search_assets(&self, tenant_id: TenantId, query: &AssetSearchQuery) -> Vec<Asset> {
+    async fn search_assets(
+        &self,
+        tenant_id: TenantId,
+        query: &AssetSearchQuery,
+    ) -> Vec<AssetWithTags> {
         self.list_active_assets(tenant_id)
             .await
             .into_iter()
@@ -70,25 +79,35 @@ impl AssetQueryPort for StubAssetQuery {
                     .as_deref()
                     .map(str::trim)
                     .filter(|s| !s.is_empty())
-                    .map(|n| e.name.as_str() == n)
+                    .map(|n| e.asset.name.as_str() == n)
                     .unwrap_or(true);
                 let fuzzy_ok = query
                     .fuzzyname
                     .as_deref()
                     .map(str::trim)
                     .filter(|s| !s.is_empty())
-                    .map(|n| e.name.as_str().to_lowercase().contains(&n.to_lowercase()))
+                    .map(|n| {
+                        e.asset
+                            .name
+                            .as_str()
+                            .to_lowercase()
+                            .contains(&n.to_lowercase())
+                    })
                     .unwrap_or(true);
                 name_ok && fuzzy_ok
             })
             .collect()
     }
 
-    async fn list_child_assets(&self, tenant_id: TenantId, parent_id: AssetId) -> Vec<Asset> {
+    async fn list_child_assets(
+        &self,
+        tenant_id: TenantId,
+        parent_id: AssetId,
+    ) -> Vec<AssetWithTags> {
         self.list_active_assets(tenant_id)
             .await
             .into_iter()
-            .filter(|e| e.parent == Some(parent_id) && e.id != parent_id)
+            .filter(|e| e.asset.parent == Some(parent_id) && e.asset.id != parent_id)
             .collect()
     }
 }
@@ -117,14 +136,7 @@ impl AssetCommandPort for StubAssetCommand {
     ) -> Result<Asset, String> {
         let id_raw = self.next_id.fetch_add(1, Ordering::Relaxed);
         let id = AssetId::from(id_raw);
-        let entity = Asset::new(
-            id,
-            tenant_id,
-            name,
-            parent,
-            AssetTimestamp::now(),
-            None,
-        );
+        let entity = Asset::new(id, tenant_id, name, parent, AssetTimestamp::now(), None);
 
         let mut assets = self.assets.lock().unwrap();
         assets.insert(id_raw, entity.clone());

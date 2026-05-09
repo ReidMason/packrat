@@ -15,11 +15,11 @@ pub async fn execute(
 mod tests {
     use super::*;
     use async_trait::async_trait;
+    use packrat_domain::tenant::TenantId;
     use packrat_domain::{
         aggregates::partial_asset::PartialAsset,
         asset::{Asset, AssetName},
     };
-    use packrat_domain::tenant::TenantId;
 
     struct MockAssetCommand;
 
@@ -55,16 +55,20 @@ mod tests {
     #[tokio::test]
     async fn delete_ok() {
         let port = MockAssetCommand;
-        assert!(execute(&port, TenantId::from(1), AssetId::from(1))
-            .await
-            .is_ok());
+        assert!(
+            execute(&port, TenantId::from(1), AssetId::from(1))
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]
     async fn delete_missing() {
         let port = MockAssetCommand;
-        assert!(execute(&port, TenantId::from(1), AssetId::from(999))
-            .await
-            .is_err());
+        assert!(
+            execute(&port, TenantId::from(1), AssetId::from(999))
+                .await
+                .is_err()
+        );
     }
 }

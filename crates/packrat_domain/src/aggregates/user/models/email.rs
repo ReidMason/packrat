@@ -24,4 +24,3 @@ impl From<Email> for String {
         email.0
     }
 }
-

@@ -26,7 +26,8 @@ pub async fn create_tenant_handler(
         session.user_id,
         TenantName::from(name),
     )
-    .await {
+    .await
+    {
         Ok(tenant) => Ok((
             StatusCode::CREATED,
             Json(SuccessBody::new(TenantDto::from_tenant(tenant))),

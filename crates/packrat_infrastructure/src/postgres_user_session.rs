@@ -5,8 +5,8 @@ use sqlx::PgPool;
 use packrat_application::{
     UserSessionCommandError, UserSessionCommandPort, UserSessionQueryError, UserSessionQueryPort,
 };
-use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::aggregates::user_session::{TokenHash, UserSession};
+use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::user::UserId;
 
 #[derive(Clone)]
@@ -50,10 +50,13 @@ impl UserSessionCommandPort for PostgresUserSessionCommand {
     async fn delete_by_token(&self, token: TokenHash) -> Result<(), UserSessionCommandError> {
         let token_hash: Vec<u8> = token.into();
 
-        sqlx::query!(r#"DELETE FROM sessions WHERE token_hash = $1"#, token_hash.as_slice() as &[u8],)
-            .execute(&self.pool)
-            .await
-            .map_err(|e| UserSessionCommandError::Persist(e.to_string()))?;
+        sqlx::query!(
+            r#"DELETE FROM sessions WHERE token_hash = $1"#,
+            token_hash.as_slice() as &[u8],
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| UserSessionCommandError::Persist(e.to_string()))?;
 
         Ok(())
     }
@@ -233,19 +236,23 @@ mod tests {
         let write = PostgresUserSessionCommand::new(pool.clone());
         write.save(session).await.unwrap();
 
-        assert!(PostgresUserSessionQuery::new(pool.clone())
-            .get_by_token(&hash_clone)
-            .await
-            .unwrap()
-            .is_some());
+        assert!(
+            PostgresUserSessionQuery::new(pool.clone())
+                .get_by_token(&hash_clone)
+                .await
+                .unwrap()
+                .is_some()
+        );
 
         write.delete_by_token(hash_clone.clone()).await.unwrap();
 
-        assert!(PostgresUserSessionQuery::new(pool)
-            .get_by_token(&hash_clone)
-            .await
-            .unwrap()
-            .is_none());
+        assert!(
+            PostgresUserSessionQuery::new(pool)
+                .get_by_token(&hash_clone)
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[sqlx::test]
@@ -278,11 +285,13 @@ mod tests {
         .await
         .unwrap();
 
-        assert!(PostgresUserSessionQuery::new(pool)
-            .get_by_token(&hash)
-            .await
-            .unwrap()
-            .is_none());
+        assert!(
+            PostgresUserSessionQuery::new(pool)
+                .get_by_token(&hash)
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[sqlx::test]
@@ -310,11 +319,13 @@ mod tests {
         .await
         .unwrap();
 
-        assert!(PostgresUserSessionQuery::new(pool)
-            .get_by_token(&hash)
-            .await
-            .unwrap()
-            .is_none());
+        assert!(
+            PostgresUserSessionQuery::new(pool)
+                .get_by_token(&hash)
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[sqlx::test]
@@ -353,10 +364,7 @@ mod tests {
             .await
             .unwrap();
 
-        write
-            .delete_all_for_user(user_a.id)
-            .await
-            .unwrap();
+        write.delete_all_for_user(user_a.id).await.unwrap();
 
         let read = PostgresUserSessionQuery::new(pool.clone());
         assert!(read.get_by_token(&hash_a1).await.unwrap().is_none());

@@ -11,8 +11,9 @@ use std::sync::Arc;
 
 use packrat_infrastructure::{
     PostgresAssetCommand, PostgresAssetQuery, PostgresAuthorizationQuery, PostgresReadiness,
-    PostgresTenantCommand, PostgresTenantQuery, PostgresUserCommand, PostgresUserQuery,
-    PostgresUserSessionCommand, PostgresUserSessionQuery, connect_pool, run_migrations,
+    PostgresTags, PostgresTenantCommand, PostgresTenantQuery, PostgresUserCommand,
+    PostgresUserQuery, PostgresUserSessionCommand, PostgresUserSessionQuery, connect_pool,
+    run_migrations,
 };
 
 use crate::state::AppState;
@@ -60,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tenant_command: Arc::new(PostgresTenantCommand::new(pool.clone())),
         tenant_query: Arc::new(PostgresTenantQuery::new(pool.clone())),
         authorization: Arc::new(PostgresAuthorizationQuery::new(pool.clone())),
+        tags: Arc::new(PostgresTags::new(pool)),
     };
 
     let app = app::build_app(state, static_ui);

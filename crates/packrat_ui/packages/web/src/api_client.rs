@@ -38,6 +38,12 @@ pub struct ReadyDto {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct TagDto {
+    pub id: i64,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AssetDto {
     pub id: i64,
     pub tenant_id: i64,
@@ -45,6 +51,8 @@ pub struct AssetDto {
     pub parent_id: Option<i64>,
     pub created: String,
     pub deleted: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<TagDto>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

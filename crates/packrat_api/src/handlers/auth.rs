@@ -36,9 +36,7 @@ pub async fn login_handler(
         )),
         Err(msg) if msg == "Invalid email" || msg == "Invalid password" => Err((
             StatusCode::UNAUTHORIZED,
-            Json(ErrorBody::message(
-                "Invalid email or password".to_string(),
-            )),
+            Json(ErrorBody::message("Invalid email or password".to_string())),
         )),
         Err(msg) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,

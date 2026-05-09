@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
-use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery};
+use packrat_application::{AssetCommandPort, AssetQueryPort, AssetSearchQuery, AssetWithTags};
 use packrat_domain::aggregates::partial_asset::PartialAsset;
 use packrat_domain::asset::{Asset, AssetId, AssetName, AssetTimestamp};
+use packrat_domain::tag::{Tag, TagId, TagName};
 use packrat_domain::tenant::TenantId;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -21,6 +24,14 @@ fn asset_from_db(
         parent_id.map(AssetId::from),
         AssetTimestamp::from(created),
         deleted.map(AssetTimestamp::from),
+    )
+}
+
+fn tag_from_db(id: i64, tenant_id: i64, name: String) -> Tag {
+    Tag::new(
+        TagId::from(id),
+        TenantId::from(tenant_id),
+        TagName::from(name),
     )
 }
 
@@ -182,11 +193,57 @@ impl PostgresAssetQuery {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
+
+    async fn load_tags_for_assets(
+        &self,
+        tenant_id: TenantId,
+        asset_ids: &[i64],
+    ) -> HashMap<i64, Vec<Tag>> {
+        if asset_ids.is_empty() {
+            return HashMap::new();
+        }
+        let tid = i64::from(tenant_id);
+        let rows = sqlx::query!(
+            r#"SELECT at.asset_id, t.id as "tag_id!", t.tenant_id, t.name
+               FROM asset_tags at
+               INNER JOIN tags t ON t.id = at.tag_id
+               WHERE at.asset_id = ANY($1) AND t.tenant_id = $2
+               ORDER BY at.asset_id ASC, lower(t.name) ASC"#,
+            asset_ids as &[i64],
+            tid,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+
+        let mut map: HashMap<i64, Vec<Tag>> = HashMap::new();
+        for row in rows {
+            map.entry(row.asset_id).or_default().push(tag_from_db(
+                row.tag_id,
+                row.tenant_id,
+                row.name,
+            ));
+        }
+        map
+    }
+
+    async fn merge_with_tags(&self, tenant_id: TenantId, assets: Vec<Asset>) -> Vec<AssetWithTags> {
+        let ids: Vec<i64> = assets.iter().map(|a| i64::from(a.id)).collect();
+        let map = self.load_tags_for_assets(tenant_id, &ids).await;
+        assets
+            .into_iter()
+            .map(|a| {
+                let id = i64::from(a.id);
+                let tags = map.get(&id).cloned().unwrap_or_default();
+                AssetWithTags::new(a, tags)
+            })
+            .collect()
+    }
 }
 
 #[async_trait]
 impl AssetQueryPort for PostgresAssetQuery {
-    async fn get_asset_by_id(&self, tenant_id: TenantId, id: AssetId) -> Option<Asset> {
+    async fn get_asset_by_id(&self, tenant_id: TenantId, id: AssetId) -> Option<AssetWithTags> {
         let row = sqlx::query!(
             "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE id = $1 AND tenant_id = $2",
             i64::from(id),
@@ -197,17 +254,20 @@ impl AssetQueryPort for PostgresAssetQuery {
         .ok()
         .flatten()?;
 
-        Some(asset_from_db(
+        let asset = asset_from_db(
             row.id,
             row.tenant_id,
             row.name,
             row.parent_id,
             row.created,
             row.deleted,
-        ))
+        );
+        let map = self.load_tags_for_assets(tenant_id, &[row.id]).await;
+        let tags = map.get(&row.id).cloned().unwrap_or_default();
+        Some(AssetWithTags::new(asset, tags))
     }
 
-    async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<Asset> {
+    async fn list_active_assets(&self, tenant_id: TenantId) -> Vec<AssetWithTags> {
         let rows = sqlx::query!(
             "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 ORDER BY LOWER(name) ASC",
             i64::from(tenant_id),
@@ -216,7 +276,8 @@ impl AssetQueryPort for PostgresAssetQuery {
         .await
         .unwrap_or_default();
 
-        rows.into_iter()
+        let assets: Vec<Asset> = rows
+            .into_iter()
             .map(|row| {
                 asset_from_db(
                     row.id,
@@ -227,10 +288,16 @@ impl AssetQueryPort for PostgresAssetQuery {
                     row.deleted,
                 )
             })
-            .collect()
+            .collect();
+
+        self.merge_with_tags(tenant_id, assets).await
     }
 
-    async fn search_assets(&self, tenant_id: TenantId, query: &AssetSearchQuery) -> Vec<Asset> {
+    async fn search_assets(
+        &self,
+        tenant_id: TenantId,
+        query: &AssetSearchQuery,
+    ) -> Vec<AssetWithTags> {
         let name = query
             .name
             .as_ref()
@@ -258,7 +325,8 @@ impl AssetQueryPort for PostgresAssetQuery {
         .await
         .unwrap_or_default();
 
-        rows.into_iter()
+        let assets: Vec<Asset> = rows
+            .into_iter()
             .map(|row| {
                 asset_from_db(
                     row.id,
@@ -269,10 +337,16 @@ impl AssetQueryPort for PostgresAssetQuery {
                     row.deleted,
                 )
             })
-            .collect()
+            .collect();
+
+        self.merge_with_tags(tenant_id, assets).await
     }
 
-    async fn list_child_assets(&self, tenant_id: TenantId, parent_id: AssetId) -> Vec<Asset> {
+    async fn list_child_assets(
+        &self,
+        tenant_id: TenantId,
+        parent_id: AssetId,
+    ) -> Vec<AssetWithTags> {
         let rows = sqlx::query!(
             "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 AND parent_id = $2 ORDER BY LOWER(name) ASC",
             i64::from(tenant_id),
@@ -282,7 +356,8 @@ impl AssetQueryPort for PostgresAssetQuery {
         .await
         .unwrap_or_default();
 
-        rows.into_iter()
+        let assets: Vec<Asset> = rows
+            .into_iter()
             .map(|row| {
                 asset_from_db(
                     row.id,
@@ -293,7 +368,9 @@ impl AssetQueryPort for PostgresAssetQuery {
                     row.deleted,
                 )
             })
-            .collect()
+            .collect();
+
+        self.merge_with_tags(tenant_id, assets).await
     }
 }
 
@@ -318,6 +395,9 @@ pub async fn ping_database(pool: &PgPool) -> Result<(), sqlx::Error> {
 #[cfg(test)]
 mod postgres_tests {
     use super::*;
+    use crate::postgres_tags::PostgresTags;
+    use packrat_application::{AssetQueryPort, TagCommandPort, TagQueryPort};
+    use packrat_domain::tag::TagName;
     use packrat_domain::tenant::TenantId;
 
     async fn insert_test_tenant(pool: &PgPool) -> TenantId {
@@ -418,14 +498,94 @@ mod postgres_tests {
         let result = command.update_asset(tenant_id, asset.id, changes).await;
         assert!(result.is_ok());
 
-        let row = sqlx::query!(
-            "SELECT name FROM assets WHERE id = $1",
-            i64::from(asset.id),
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+        let row = sqlx::query!("SELECT name FROM assets WHERE id = $1", i64::from(asset.id),)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
         assert_eq!(row.name, "New Name");
+    }
+
+    #[sqlx::test]
+    async fn ensure_tag_normalizes_case(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
+        let tags = PostgresTags::new(pool);
+        let first = tags
+            .ensure_tag(tenant_id, TagName::parse("Electronics").unwrap())
+            .await
+            .unwrap();
+        let second = tags
+            .ensure_tag(tenant_id, TagName::parse("electronics").unwrap())
+            .await
+            .unwrap();
+        assert_eq!(first.id, second.id);
+        assert_eq!(first.name.as_str(), "Electronics");
+    }
+
+    #[sqlx::test]
+    async fn set_asset_tags_rejects_tag_from_other_tenant(pool: PgPool) {
+        let tenant_a = insert_test_tenant(&pool).await;
+        let tenant_b = insert_test_tenant(&pool).await;
+        let command = PostgresAssetCommand::new(pool.clone());
+        let tags = PostgresTags::new(pool.clone());
+        let asset = command
+            .create_asset(tenant_a, AssetName::from("Thing"), None)
+            .await
+            .unwrap();
+        let foreign = tags
+            .ensure_tag(tenant_b, TagName::parse("orphan").unwrap())
+            .await
+            .unwrap();
+        let err = tags
+            .set_asset_tags(tenant_a, asset.id, vec![foreign.id])
+            .await
+            .unwrap_err();
+        assert!(err.contains("not found"));
+    }
+
+    #[sqlx::test]
+    async fn asset_queries_include_joined_tags(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
+        let command = PostgresAssetCommand::new(pool.clone());
+        let tags = PostgresTags::new(pool.clone());
+        let asset = command
+            .create_asset(tenant_id, AssetName::from("Camera"), None)
+            .await
+            .unwrap();
+        let tag = tags
+            .ensure_tag(tenant_id, TagName::parse("photo").unwrap())
+            .await
+            .unwrap();
+        tags.set_asset_tags(tenant_id, asset.id, vec![tag.id])
+            .await
+            .unwrap();
+
+        let query = PostgresAssetQuery::new(pool.clone());
+        let by_id = query.get_asset_by_id(tenant_id, asset.id).await.unwrap();
+        assert_eq!(by_id.tags.len(), 1);
+        assert_eq!(by_id.tags[0].name.as_str(), "photo");
+
+        let listed = query.list_active_assets(tenant_id).await;
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].tags.len(), 1);
+    }
+
+    #[sqlx::test]
+    async fn list_tags_prefix_matches_normalized(pool: PgPool) {
+        let tenant_id = insert_test_tenant(&pool).await;
+        let tags = PostgresTags::new(pool);
+        tags.ensure_tag(tenant_id, TagName::parse("apple").unwrap())
+            .await
+            .unwrap();
+        tags.ensure_tag(tenant_id, TagName::parse("application").unwrap())
+            .await
+            .unwrap();
+        tags.ensure_tag(tenant_id, TagName::parse("banana").unwrap())
+            .await
+            .unwrap();
+        let apple_prefixed = tags.list_tags(tenant_id, Some("app")).await;
+        assert_eq!(apple_prefixed.len(), 2);
+        let all = tags.list_tags(tenant_id, None).await;
+        assert_eq!(all.len(), 3);
     }
 }
