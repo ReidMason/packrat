@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use packrat_application::{ensure_tag, list_tags, set_asset_tags};
 use packrat_domain::PermissionSlug;
@@ -8,18 +8,18 @@ use packrat_domain::tag::{TagId, TagName};
 use packrat_domain::tenant::TenantId;
 
 use crate::authorization::ensure_tenant_permission;
-use crate::dto::{CreateTagDto, ErrorBody, ListTagsQuery, SetAssetTagsDto, SuccessBody, TagDto};
+use crate::dto::{CreateTagDto, ErrorBody, SearchTagsDto, SetAssetTagsDto, SuccessBody, TagDto};
 use crate::middleware::AuthSession;
 use crate::state::AppState;
 
-pub async fn list_tags_handler(
+pub async fn search_tags_handler(
     State(state): State<AppState>,
     Extension(session): Extension<AuthSession>,
     Path(tenant_id): Path<i64>,
-    Query(query): Query<ListTagsQuery>,
+    Json(body): Json<SearchTagsDto>,
 ) -> Result<Json<SuccessBody<Vec<TagDto>>>, (StatusCode, Json<ErrorBody>)> {
     ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsRead).await?;
-    let prefix = query.q.as_deref().and_then(|s| {
+    let prefix = body.prefix.as_deref().and_then(|s| {
         let t = s.trim();
         if t.is_empty() { None } else { Some(t) }
     });

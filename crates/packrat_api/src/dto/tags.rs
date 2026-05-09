@@ -28,7 +28,7 @@ pub struct SetAssetTagsDto {
 }
 
 #[derive(serde::Deserialize)]
-pub struct ListTagsQuery {
+pub struct SearchTagsDto {
     #[serde(default)]
-    pub q: Option<String>,
+    pub prefix: Option<String>,
 }

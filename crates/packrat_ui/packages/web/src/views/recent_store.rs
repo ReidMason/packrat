@@ -43,7 +43,12 @@ pub fn save_recent_disk(entries: &[RecentBrief]) {
 #[cfg(not(target_arch = "wasm32"))]
 pub fn save_recent_disk(_entries: &[RecentBrief]) {}
 
-pub fn remember_recent(mut recent: Signal<Vec<RecentBrief>>, tenant_id: i64, id: i64, name: String) {
+pub fn remember_recent(
+    mut recent: Signal<Vec<RecentBrief>>,
+    tenant_id: i64,
+    id: i64,
+    name: String,
+) {
     let mut v = recent();
     v.retain(|e| e.id != id);
     v.insert(

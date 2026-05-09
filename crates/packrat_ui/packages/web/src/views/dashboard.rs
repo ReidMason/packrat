@@ -208,6 +208,18 @@ fn AssetCard(asset: AssetDto) -> Element {
                     dd { "Removed" }
                 }
             }
+            if !asset.tags.is_empty() {
+                div {
+                    class: "flex flex-wrap gap-1.5 pt-2",
+                    for tag in asset.tags.iter() {
+                        span {
+                            key: "{tag.id}",
+                            class: "rounded-full bg-ui-bg-dim/80 border border-ui-bg-dim px-2 py-0.5 text-[11px] font-medium text-ui-text-muted",
+                            "{tag.name}"
+                        }
+                    }
+                }
+            }
         }
     }
 }
