@@ -17,6 +17,7 @@ fn AssetTagsSection(
 
     let mut draft = use_signal(Vec::<TagDto>::new);
     let mut tag_input = use_signal(String::new);
+    let mut tag_focused = use_signal(|| false);
     let mut tag_busy = use_signal(|| false);
     let mut tag_msg = use_signal(|| Option::<String>::None);
 
@@ -25,24 +26,23 @@ fn AssetTagsSection(
         draft.set(server_tags_for_sync.clone());
     }));
 
-    let sug_res = use_resource({
-        let api_base_sig = api_base;
-        let token_sig = auth_token;
-        move || {
-            let needle = tag_input().trim().to_string();
-            let prefix = if needle.is_empty() {
-                None
-            } else {
-                Some(needle.clone())
-            };
-            let base = api_base_sig();
-            let token = token_sig();
-            let tid = tenant_id;
-            async move {
-                api_client::search_tags(&base, tid, &SearchTagsRequest { prefix }, token.as_deref())
-                    .await
-            }
-        }
+    // Signals must be read inside the async future so `use_resource` subscribes (see dioxus use_resource docs).
+    let sug_res = use_resource(move || async move {
+        let needle = tag_input().trim().to_string();
+        let prefix = if needle.is_empty() {
+            None
+        } else {
+            Some(needle)
+        };
+        let base = api_base();
+        let token = auth_token();
+        api_client::search_tags(
+            &base,
+            tenant_id,
+            &SearchTagsRequest { prefix },
+            token.as_deref(),
+        )
+        .await
     });
 
     rsx! {
@@ -90,6 +90,8 @@ fn AssetTagsSection(
                         class: "bg-ui-bg-dim border border-ui-bg-dim rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-2 focus:ring-ui-secondary",
                         placeholder: "Type to search or create…",
                         value: "{tag_input}",
+                        onfocus: move |_| tag_focused.set(true),
+                        onblur: move |_| tag_focused.set(false),
                         oninput: move |e| *tag_input.write() = e.value(),
                     }
                 }
@@ -141,35 +143,76 @@ fn AssetTagsSection(
                 }
             }
 
-            match sug_res() {
-                Some(Ok(list)) if !list.is_empty() && !tag_input().trim().is_empty() => rsx! {
-                    div {
-                        class: "rounded-lg border border-ui-bg-dim bg-ui-bg-dim/30 px-3 py-2 text-xs text-ui-text-muted max-h-36 overflow-y-auto",
-                        p { class: "text-[11px] uppercase tracking-wide mb-1.5", "Matching tags" }
-                        ul { class: "space-y-1",
-                            for s in list.iter().take(12) {
-                                li {
-                                    key: "{s.id}",
-                                    button {
-                                        r#type: "button",
-                                        class: "w-full text-left rounded px-2 py-1 hover:bg-ui-bg-dim/80 text-ui-text",
-                                        onclick: {
-                                            let tag = s.clone();
-                                            move |_| {
-                                                if !draft().iter().any(|x| x.id == tag.id) {
-                                                    draft.with_mut(|v| v.push(tag.clone()));
+            {
+                let q = tag_input().trim().to_string();
+                let show_suggestions = tag_focused() || !q.is_empty();
+                let sug = sug_res();
+                let applied_ids: std::collections::HashSet<i64> =
+                    draft().iter().map(|t| t.id).collect();
+                rsx! {
+                    if let Some(Err(e)) = sug.as_ref() {
+                        if show_suggestions {
+                            p { class: "text-xs text-ui-error", "Could not load tag suggestions: {e}" }
+                        }
+                    }
+                    if show_suggestions {
+                        if let Some(Ok(list)) = sug.as_ref() {
+                            {
+                                let filtered: Vec<TagDto> = list
+                                    .iter()
+                                    .filter(|s| !applied_ids.contains(&s.id))
+                                    .cloned()
+                                    .take(12)
+                                    .collect();
+                                let all_matched_applied =
+                                    !list.is_empty() && filtered.is_empty();
+                                rsx! {
+                                    if all_matched_applied {
+                                        p { class: "text-xs text-ui-text-muted rounded-lg border border-dashed border-ui-bg-dim bg-ui-bg-dim/20 px-3 py-2",
+                                            "Every tag that matches is already on this asset."
+                                        }
+                                    }
+                                    if !filtered.is_empty() {
+                                        div {
+                                            class: "rounded-xl border border-ui-bg-dim bg-ui-bg-accent shadow-sm ring-1 ring-black/5 dark:ring-white/5 max-h-36 overflow-y-auto",
+                                            onmousedown: move |evt| evt.prevent_default(),
+                                            div { class: "sticky top-0 z-10 border-b border-ui-bg-dim bg-ui-bg-accent px-3 py-2",
+                                                p { class: "text-[11px] font-semibold uppercase tracking-wide text-ui-text-muted",
+                                                    if q.is_empty() { "Tags in this workspace" } else { "Matching tags" }
                                                 }
-                                                tag_input.write().clear();
+                                                p { class: "text-[10px] text-ui-text-muted mt-0.5", "Click a row to add" }
                                             }
-                                        },
-                                        "{s.name}"
+                                            ul { class: "divide-y divide-ui-bg-dim p-1",
+                                                for s in filtered.iter() {
+                                                    li {
+                                                        key: "{s.id}",
+                                                        button {
+                                                            r#type: "button",
+                                                            class: "group flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ui-text transition-colors hover:bg-ui-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-ui-bg-accent",
+                                                            onclick: {
+                                                                let tag = s.clone();
+                                                                move |_| {
+                                                                    if !draft().iter().any(|x| x.id == tag.id) {
+                                                                        draft.with_mut(|v| v.push(tag.clone()));
+                                                                    }
+                                                                    tag_input.write().clear();
+                                                                }
+                                                            },
+                                                            span { class: "min-w-0 truncate", "{s.name}" }
+                                                            span { class: "shrink-0 rounded bg-ui-bg-dim px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ui-text-muted transition-colors group-hover:bg-ui-primary/20 group-hover:text-ui-primary",
+                                                                "Add"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                },
-                _ => rsx! {},
+                }
             }
 
             button {
