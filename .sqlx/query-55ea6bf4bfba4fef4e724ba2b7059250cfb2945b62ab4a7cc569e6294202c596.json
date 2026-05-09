@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT name, parent_id FROM assets WHERE id = $1 AND deleted IS NULL",
+  "query": "SELECT name, parent_id FROM assets WHERE id = $1 AND tenant_id = $2 AND deleted IS NULL",
   "describe": {
     "columns": [
       {
@@ -16,6 +16,7 @@
     ],
     "parameters": {
       "Left": [
+        "Int8",
         "Int8"
       ]
     },
@@ -24,5 +25,5 @@
       true
     ]
   },
-  "hash": "98eaf840e2773e3e529b3501c134941f4b21fcff4098e3562f476c1414c69848"
+  "hash": "55ea6bf4bfba4fef4e724ba2b7059250cfb2945b62ab4a7cc569e6294202c596"
 }

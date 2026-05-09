@@ -7,7 +7,9 @@ use packrat_application::{
 };
 use packrat_domain::asset::{AssetId, AssetName};
 use packrat_domain::tenant::TenantId;
+use packrat_domain::PermissionSlug;
 
+use crate::authorization::ensure_tenant_permission;
 use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
 use crate::middleware::AuthSession;
 use crate::state::AppState;
@@ -16,17 +18,17 @@ pub async fn list_child_assets_handler(
     State(state): State<AppState>,
     Extension(session): Extension<AuthSession>,
     Path((tenant_id, id)): Path<(i64, i64)>,
-) -> Json<SuccessBody<Vec<AssetDto>>> {
-    let _ = session.user_id;
+) -> Result<Json<SuccessBody<Vec<AssetDto>>>, (StatusCode, Json<ErrorBody>)> {
+    ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsRead).await?;
     let entities = list_child_assets(
         state.query.as_ref(),
         TenantId::from(tenant_id),
         AssetId::from(id),
     )
     .await;
-    Json(SuccessBody::new(
+    Ok(Json(SuccessBody::new(
         entities.into_iter().map(AssetDto::from_entity).collect(),
-    ))
+    )))
 }
 
 pub async fn search_assets_handler(
@@ -35,7 +37,7 @@ pub async fn search_assets_handler(
     Path(tenant_id): Path<i64>,
     Json(body): Json<SearchAssetsDto>,
 ) -> Result<Json<SuccessBody<Vec<AssetDto>>>, (StatusCode, Json<ErrorBody>)> {
-    let _ = session.user_id;
+    ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsRead).await?;
     let name = body
         .name
         .as_ref()
@@ -72,11 +74,11 @@ pub async fn list_assets_handler(
     State(state): State<AppState>,
     Extension(session): Extension<AuthSession>,
     Path(tenant_id): Path<i64>,
-) -> Json<SuccessBody<Vec<AssetDto>>> {
-    let _ = session.user_id;
+) -> Result<Json<SuccessBody<Vec<AssetDto>>>, (StatusCode, Json<ErrorBody>)> {
+    ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsRead).await?;
     let entities = list_assets(state.query.as_ref(), TenantId::from(tenant_id)).await;
     let dtos: Vec<AssetDto> = entities.into_iter().map(AssetDto::from_entity).collect();
-    Json(SuccessBody::new(dtos))
+    Ok(Json(SuccessBody::new(dtos)))
 }
 
 pub async fn create_asset_handler(
@@ -85,7 +87,7 @@ pub async fn create_asset_handler(
     Path(tenant_id): Path<i64>,
     Json(body): Json<CreateAssetDto>,
 ) -> Result<(StatusCode, Json<SuccessBody<AssetDto>>), (StatusCode, Json<ErrorBody>)> {
-    let _ = session.user_id;
+    ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsWrite).await?;
     if body.name.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -118,7 +120,7 @@ pub async fn get_asset_handler(
     Extension(session): Extension<AuthSession>,
     Path((tenant_id, id)): Path<(i64, i64)>,
 ) -> Result<Json<SuccessBody<AssetDto>>, (StatusCode, Json<ErrorBody>)> {
-    let _ = session.user_id;
+    ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsRead).await?;
     match get_asset(
         state.query.as_ref(),
         TenantId::from(tenant_id),
@@ -139,7 +141,7 @@ pub async fn delete_asset_handler(
     Extension(session): Extension<AuthSession>,
     Path((tenant_id, id)): Path<(i64, i64)>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorBody>)> {
-    let _ = session.user_id;
+    ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsDelete).await?;
     delete_asset(
         state.command.as_ref(),
         TenantId::from(tenant_id),

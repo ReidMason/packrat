@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use ui::TailwindConfig;
 use views::recent_store;
-use views::{AssetDetail, DebugPage, Home, Login, NewAsset};
+use views::{Account, AssetDetail, DebugPage, Home, Login, NewAsset};
 
 mod api_base;
 mod api_client;
@@ -15,6 +15,8 @@ enum Route {
     #[layout(AppShell)]
     #[route("/")]
     Home {},
+    #[route("/account")]
+    Account {},
     #[route("/tenants/:tenant_id/assets/new")]
     NewAsset { tenant_id: i64 },
     #[route("/tenants/:tenant_id/assets/:id")]
@@ -41,6 +43,7 @@ fn App() -> Element {
     use_context_provider(|| active_tenant);
 
     rsx! {
+        document::Title { "Packrat" }
         document::Link { rel: "icon", href: FAVICON }
         TailwindConfig {
             Router::<Route> {}
@@ -110,7 +113,7 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "rounded-lg px-3 py-2 text-sm font-medium text-ui-text hover:bg-ui-bg-accent/60",
-                        to: Route::Login {},
+                        to: Route::Account {},
                         "Account"
                     }
                     Link {
@@ -157,7 +160,7 @@ fn AppShell() -> Element {
                     }
                     Link {
                         class: "text-sm font-medium text-ui-text-muted",
-                        to: Route::Login {},
+                        to: Route::Account {},
                         "Account"
                     }
                     Link {

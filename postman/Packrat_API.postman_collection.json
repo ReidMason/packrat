@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-packrat-api",
     "name": "Packrat API",
-    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n**Auth:** after `POST /api/login`, send `Authorization: Bearer <token>` on all routes except `/api/health`, `/api/ready`, `/api/users`, and `/api/login`. Set collection variable `auth_token` from the login response.\n\n**Workspaces:** `GET /api/me/tenants` lists tenants for the session user (`user_tenants`). `POST /api/tenants` creates a tenant and adds the caller as a member.\n\n**Assets** are under `/api/tenants/{{tenant_id}}/assets/...`.\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **POST /api/users** — register: `email` + `password`; returns `UserDto` (201).\n- **POST /api/login** — email/password; returns `user_id` and opaque `token` on success.\n- **GET /api/me/tenants** — list workspaces for the authenticated user.\n- **GET /api/tenants/:tenant_id/assets** — list active (non-deleted) assets for that tenant.\n- **POST /api/tenants/:tenant_id/assets/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/tenants/:tenant_id/assets/:id/children** — active rows whose `parent_id` is that id.",
+    "description": "REST API for Packrat inventory (`packrat_api`). Set `base_url` if you use another host/port (`LISTEN_ADDR`).\n\nSuccessful JSON responses use `{ \"data\": ... }`. Error JSON uses `{ \"error\": { \"message\": \"...\" } }`. DELETE success is 204 with no body.\n\n**Auth:** after `POST /api/login`, send `Authorization: Bearer <token>` on all routes except `/api/health`, `/api/ready`, `/api/users`, and `/api/login`. Set collection variable `auth_token` from the login response.\n\n**Workspaces:** `GET /api/me/tenants` lists tenants where the session user has a **`user_roles`** row for that workspace. `POST /api/tenants` creates a tenant and assigns the creator the **Owner** role.\n\n**Assets** are under `/api/tenants/{{tenant_id}}/assets/...`. Tenant-scoped asset routes return **403** when the authenticated user lacks the required permission for that tenant (see each request description).\n\n- **GET /api/health** — liveness (no DB).\n- **GET /api/ready** — readiness (`SELECT 1` on Postgres).\n- **POST /api/users** — register: `email` + `password`; returns `UserDto` (201).\n- **POST /api/login** — email/password; returns `user_id` and opaque `token` on success.\n- **GET /api/me/tenants** — list workspaces for the authenticated user.\n- **GET /api/tenants/:tenant_id/assets** — list active (non-deleted) assets for that tenant.\n- **POST /api/tenants/:tenant_id/assets/search** — search by `name` (exact) and/or `fuzzyname` (case-insensitive substring).\n- **GET /api/tenants/:tenant_id/assets/:id/children** — active rows whose `parent_id` is that id.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -97,7 +97,7 @@
               }
             ],
             "url": "{{base_url}}/api/me/tenants",
-            "description": "Requires `Authorization: Bearer <token>`. Returns `{ \"data\": [ TenantDto, ... ] }` for tenants linked via `user_tenants` for the session user only."
+            "description": "Requires `Authorization: Bearer <token>`. Returns `{ \"data\": [ TenantDto, ... ] }` for tenants where the session user has at least one `user_roles` row (workspace membership via roles)."
           },
           "response": []
         }
@@ -112,7 +112,7 @@
             "method": "GET",
             "header": [],
             "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets",
-            "description": "Returns `{ \"data\": [ AssetDto, ... ] }` for assets in this tenant where `deleted` is null, ordered by name (case-insensitive). AssetDto includes `tenant_id`."
+            "description": "Requires `Authorization: Bearer <token>`. Returns `{ \"data\": [ AssetDto, ... ] }` for assets in this tenant where `deleted` is null, ordered by name (case-insensitive). **403** if the user lacks `assets.read` (or a broader role permission such as `assets.admin`) for this tenant."
           },
           "response": []
         },
@@ -131,7 +131,7 @@
               "raw": "{\n  \"name\": null,\n  \"fuzzyname\": \"tool\"\n}"
             },
             "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/search",
-            "description": "Body JSON: optional `name` (exact match on stored name, case-sensitive) and optional `fuzzyname` (case-insensitive substring). At least one must be non-empty. Both may be set; filters are combined with AND. Returns `{ \"data\": [ AssetDto, ... ] }` for active assets only in this tenant."
+            "description": "Requires `Authorization: Bearer <token>`. Body JSON: optional `name` (exact match on stored name, case-sensitive) and optional `fuzzyname` (case-insensitive substring). At least one must be non-empty. **403** if the user lacks `assets.read` (or parent) for this tenant."
           },
           "response": []
         },
@@ -150,7 +150,7 @@
               "raw": "{\n  \"name\": \"Toolbox\",\n  \"parent_id\": null\n}"
             },
             "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets",
-            "description": "Creates a root asset when `parent_id` is null. Set `parent_id` to an existing asset id in the same tenant to nest."
+            "description": "Requires `Authorization: Bearer <token>`. Creates a root asset when `parent_id` is null. Set `parent_id` to an existing asset id in the same tenant to nest. **403** if the user lacks `assets.write` (or parent) for this tenant."
           },
           "response": []
         },
@@ -160,7 +160,7 @@
             "method": "GET",
             "header": [],
             "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/1",
-            "description": "Returns 404 if the asset does not exist in this tenant. Change the `1` in the path to another id as needed."
+            "description": "Requires `Authorization: Bearer <token>`. Returns 404 if the asset does not exist in this tenant. **403** if the user lacks `assets.read` (or parent) for this tenant."
           },
           "response": []
         },
@@ -170,7 +170,7 @@
             "method": "GET",
             "header": [],
             "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/1/children",
-            "description": "Returns `{ \"data\": [ AssetDto, ... ] }` for active assets with `parent_id` equal to the path id (ordered by name). Empty array if none. Change `1` in the path as needed."
+            "description": "Requires `Authorization: Bearer <token>`. Returns `{ \"data\": [ AssetDto, ... ] }` for active assets with `parent_id` equal to the path id (ordered by name). **403** if the user lacks `assets.read` (or parent) for this tenant."
           },
           "response": []
         },
@@ -180,7 +180,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{base_url}}/api/tenants/{{tenant_id}}/assets/1",
-            "description": "204 on success. 404 if not found. 409 if the asset still has children. Change the `1` in the path to another id as needed."
+            "description": "Requires `Authorization: Bearer <token>`. 204 on success. 404 if not found. 409 if the asset still has children. **403** if the user lacks `assets.delete` (or parent) for this tenant."
           },
           "response": []
         }

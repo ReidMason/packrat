@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT t.id, t.name, t.created, t.updated\n            FROM tenants t\n            WHERE t.id IN (\n                SELECT DISTINCT ur.tenant_id\n                FROM user_roles ur\n                WHERE ur.user_id = $1\n            )\n            ORDER BY LOWER(t.name) ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "created",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "updated",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d22c917c005eb89cdd3c5569be87074f50fe015fa3a49aebed88ae17304af938"
+}

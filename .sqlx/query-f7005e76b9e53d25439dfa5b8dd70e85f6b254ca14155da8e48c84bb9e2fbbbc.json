@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO assets (name, parent_id, created, deleted) VALUES ($1, $2, $3, $4) RETURNING id",
+  "query": "INSERT INTO assets (name, parent_id, created, deleted, tenant_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -14,12 +14,13 @@
         "Text",
         "Int8",
         "Timestamptz",
-        "Timestamptz"
+        "Timestamptz",
+        "Int8"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "ec5ba834a0e9f7175f7988ea110ea7a42a5d270dc04000cb2898b762833363d5"
+  "hash": "f7005e76b9e53d25439dfa5b8dd70e85f6b254ca14155da8e48c84bb9e2fbbbc"
 }

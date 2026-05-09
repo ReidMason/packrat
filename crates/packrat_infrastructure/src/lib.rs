@@ -1,6 +1,7 @@
 //! Adapters: persistence, APIs, OS. Implements ports from `packrat_application`.
 
 mod postgres;
+mod postgres_authorization;
 mod postgres_tenant;
 mod postgres_user;
 mod postgres_user_session;
@@ -18,6 +19,7 @@ use std::{
 pub use postgres::{
     PostgresAssetCommand, PostgresAssetQuery, connect_pool, ping_database, run_migrations,
 };
+pub use postgres_authorization::PostgresAuthorizationQuery;
 pub use postgres_tenant::{PostgresTenantCommand, PostgresTenantQuery};
 pub use postgres_user::{PostgresUserCommand, PostgresUserQuery};
 pub use postgres_user_session::{PostgresUserSessionCommand, PostgresUserSessionQuery};

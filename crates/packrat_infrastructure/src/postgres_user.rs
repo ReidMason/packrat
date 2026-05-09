@@ -140,11 +140,13 @@ mod tests {
         assert_eq!(user.email.as_str(), "hello@example.com");
         assert!(i64::from(user.id) > 0);
 
-        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE email = $1")
-            .bind("hello@example.com")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+        let count = sqlx::query_scalar!(
+            r#"SELECT COUNT(*)::bigint AS "count!" FROM users WHERE email = $1"#,
+            "hello@example.com",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
         assert_eq!(count, 1);
     }
 

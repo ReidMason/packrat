@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 
 use packrat_application::{
     TenantCommandError, TenantCommandPort, TenantMembershipQueryPort,
@@ -32,32 +32,31 @@ impl TenantCommandPort for PostgresTenantCommand {
             .await
             .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
 
-        let row = sqlx::query(
+        let row = sqlx::query!(
             r#"
             INSERT INTO tenants (name)
             VALUES ($1)
             RETURNING id, name, created, updated
             "#,
+            trimmed,
         )
-        .bind(trimmed)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
 
-        let id: i64 = row.try_get("id").map_err(|e| TenantCommandError::Persist(e.to_string()))?;
-        let name_db: String = row
-            .try_get("name")
-            .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
-        let created: chrono::DateTime<chrono::Utc> = row
-            .try_get("created")
-            .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
-        let updated: chrono::DateTime<chrono::Utc> = row
-            .try_get("updated")
-            .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
+        let owner_role_id = sqlx::query_scalar!(
+            "SELECT id FROM roles WHERE name = 'Owner' AND tenant_id IS NULL LIMIT 1"
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
 
-        sqlx::query("INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2)")
-        .bind(i64::from(user_id))
-        .bind(id)
+        sqlx::query!(
+            "INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES ($1, $2, $3)",
+            i64::from(user_id),
+            owner_role_id,
+            row.id,
+        )
         .execute(&mut *tx)
         .await
         .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
@@ -67,10 +66,10 @@ impl TenantCommandPort for PostgresTenantCommand {
             .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
 
         Ok(Tenant::new(
-            TenantId::from(id),
-            TenantName::from(name_db),
-            AssetTimestamp::from(created),
-            AssetTimestamp::from(updated),
+            TenantId::from(row.id),
+            TenantName::from(row.name),
+            AssetTimestamp::from(row.created),
+            AssetTimestamp::from(row.updated),
         ))
     }
 }
@@ -88,33 +87,30 @@ impl PostgresTenantQuery {
 #[async_trait]
 impl TenantMembershipQueryPort for PostgresTenantQuery {
     async fn list_tenants_for_user(&self, user_id: UserId) -> Result<Vec<Tenant>, String> {
-        let rows = sqlx::query(
+        let rows = sqlx::query!(
             r#"
             SELECT t.id, t.name, t.created, t.updated
             FROM tenants t
-            INNER JOIN user_tenants ut ON ut.tenant_id = t.id
-            WHERE ut.user_id = $1
+            WHERE t.id IN (
+                SELECT DISTINCT ur.tenant_id
+                FROM user_roles ur
+                WHERE ur.user_id = $1
+            )
             ORDER BY LOWER(t.name) ASC
             "#,
+            i64::from(user_id),
         )
-        .bind(i64::from(user_id))
         .fetch_all(&self.pool)
         .await
         .map_err(|e| e.to_string())?;
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            let id: i64 = row.try_get("id").map_err(|e| e.to_string())?;
-            let name: String = row.try_get("name").map_err(|e| e.to_string())?;
-            let created: chrono::DateTime<chrono::Utc> =
-                row.try_get("created").map_err(|e| e.to_string())?;
-            let updated: chrono::DateTime<chrono::Utc> =
-                row.try_get("updated").map_err(|e| e.to_string())?;
             out.push(Tenant::new(
-                TenantId::from(id),
-                TenantName::from(name),
-                AssetTimestamp::from(created),
-                AssetTimestamp::from(updated),
+                TenantId::from(row.id),
+                TenantName::from(row.name),
+                AssetTimestamp::from(row.created),
+                AssetTimestamp::from(row.updated),
             ));
         }
         Ok(out)
@@ -125,12 +121,22 @@ impl TenantMembershipQueryPort for PostgresTenantQuery {
 mod tests {
     use super::*;
 
-    async fn insert_user(pool: &PgPool, email: &str) -> i64 {
-        sqlx::query_scalar(
-            "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id",
+    async fn template_role_id(pool: &PgPool, name: &str) -> i64 {
+        sqlx::query_scalar!(
+            "SELECT id FROM roles WHERE name = $1 AND tenant_id IS NULL LIMIT 1",
+            name,
         )
-        .bind(email)
-        .bind("x")
+        .fetch_one(pool)
+        .await
+        .unwrap()
+    }
+
+    async fn insert_user(pool: &PgPool, email: &str) -> i64 {
+        sqlx::query_scalar!(
+            "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id",
+            email,
+            "x",
+        )
         .fetch_one(pool)
         .await
         .unwrap()
@@ -141,30 +147,38 @@ mod tests {
         let uid_a = insert_user(&pool, "a-list-tenants@example.com").await;
         let uid_b = insert_user(&pool, "b-list-tenants@example.com").await;
 
-        let tid_alpha: i64 = sqlx::query_scalar("INSERT INTO tenants (name) VALUES ($1) RETURNING id")
-            .bind("Alpha WS")
+        let tid_alpha = sqlx::query_scalar!("INSERT INTO tenants (name) VALUES ($1) RETURNING id", "Alpha WS",)
             .fetch_one(&pool)
             .await
             .unwrap();
-        let tid_beta: i64 = sqlx::query_scalar("INSERT INTO tenants (name) VALUES ($1) RETURNING id")
-            .bind("Beta WS")
+        let tid_beta = sqlx::query_scalar!("INSERT INTO tenants (name) VALUES ($1) RETURNING id", "Beta WS",)
             .fetch_one(&pool)
             .await
             .unwrap();
 
-        sqlx::query("INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2), ($1, $3)")
-            .bind(uid_a)
-            .bind(tid_alpha)
-            .bind(tid_beta)
-            .execute(&pool)
-            .await
-            .unwrap();
-        sqlx::query("INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2)")
-            .bind(uid_b)
-            .bind(tid_beta)
-            .execute(&pool)
-            .await
-            .unwrap();
+        let rid_owner = template_role_id(&pool, "Owner").await;
+        let rid_viewer = template_role_id(&pool, "Viewer").await;
+
+        sqlx::query!(
+            "INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES ($1, $2, $3), ($1, $4, $5)",
+            uid_a,
+            rid_owner,
+            tid_alpha,
+            rid_viewer,
+            tid_beta,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query!(
+            "INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES ($1, $2, $3)",
+            uid_b,
+            rid_viewer,
+            tid_beta,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
 
         let query = PostgresTenantQuery::new(pool.clone());
         let for_a = query
@@ -196,11 +210,13 @@ mod tests {
             .unwrap();
         assert_eq!(tenant.name.as_str(), "Workshop");
 
-        let cnt: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*)::bigint FROM user_tenants WHERE user_id = $1 AND tenant_id = $2",
+        let owner_role_id = template_role_id(&pool, "Owner").await;
+        let cnt = sqlx::query_scalar!(
+            r#"SELECT COUNT(*)::bigint AS "count!" FROM user_roles WHERE user_id = $1 AND tenant_id = $2 AND role_id = $3"#,
+            uid,
+            i64::from(tenant.id),
+            owner_role_id,
         )
-        .bind(uid)
-        .bind(i64::from(tenant.id))
         .fetch_one(&pool)
         .await
         .unwrap();

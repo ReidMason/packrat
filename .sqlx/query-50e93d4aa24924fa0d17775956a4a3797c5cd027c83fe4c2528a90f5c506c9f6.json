@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 as \"one!: i32\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "one!: i32",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "50e93d4aa24924fa0d17775956a4a3797c5cd027c83fe4c2528a90f5c506c9f6"
+}

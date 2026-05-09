@@ -1,4 +1,5 @@
 mod app;
+mod authorization;
 mod dto;
 mod handlers;
 mod middleware;
@@ -9,9 +10,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use packrat_infrastructure::{
-    PostgresAssetCommand, PostgresAssetQuery, PostgresReadiness, PostgresTenantCommand,
-    PostgresTenantQuery, PostgresUserCommand, PostgresUserQuery, PostgresUserSessionCommand,
-    PostgresUserSessionQuery, connect_pool, run_migrations,
+    PostgresAssetCommand, PostgresAssetQuery, PostgresAuthorizationQuery, PostgresReadiness,
+    PostgresTenantCommand, PostgresTenantQuery, PostgresUserCommand, PostgresUserQuery,
+    PostgresUserSessionCommand, PostgresUserSessionQuery, connect_pool, run_migrations,
 };
 
 use crate::state::AppState;
@@ -58,6 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         user_session_query: Arc::new(PostgresUserSessionQuery::new(pool.clone())),
         tenant_command: Arc::new(PostgresTenantCommand::new(pool.clone())),
         tenant_query: Arc::new(PostgresTenantQuery::new(pool.clone())),
+        authorization: Arc::new(PostgresAuthorizationQuery::new(pool.clone())),
     };
 
     let app = app::build_app(state, static_ui);
