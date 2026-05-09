@@ -55,8 +55,18 @@ impl TenantCommandPort for PostgresTenantCommand {
             .try_get("updated")
             .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
 
-        sqlx::query("INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2)")
+        let owner_role_id: i64 = sqlx::query_scalar(
+            "SELECT id FROM roles WHERE name = 'Owner' AND tenant_id IS NULL LIMIT 1",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| TenantCommandError::Persist(e.to_string()))?;
+
+        sqlx::query(
+            "INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES ($1, $2, $3)",
+        )
         .bind(i64::from(user_id))
+        .bind(owner_role_id)
         .bind(id)
         .execute(&mut *tx)
         .await
@@ -92,8 +102,11 @@ impl TenantMembershipQueryPort for PostgresTenantQuery {
             r#"
             SELECT t.id, t.name, t.created, t.updated
             FROM tenants t
-            INNER JOIN user_tenants ut ON ut.tenant_id = t.id
-            WHERE ut.user_id = $1
+            WHERE t.id IN (
+                SELECT DISTINCT ur.tenant_id
+                FROM user_roles ur
+                WHERE ur.user_id = $1
+            )
             ORDER BY LOWER(t.name) ASC
             "#,
         )
@@ -125,6 +138,16 @@ impl TenantMembershipQueryPort for PostgresTenantQuery {
 mod tests {
     use super::*;
 
+    async fn template_role_id(pool: &PgPool, name: &str) -> i64 {
+        sqlx::query_scalar(
+            "SELECT id FROM roles WHERE name = $1 AND tenant_id IS NULL LIMIT 1",
+        )
+        .bind(name)
+        .fetch_one(pool)
+        .await
+        .unwrap()
+    }
+
     async fn insert_user(pool: &PgPool, email: &str) -> i64 {
         sqlx::query_scalar(
             "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id",
@@ -152,15 +175,21 @@ mod tests {
             .await
             .unwrap();
 
-        sqlx::query("INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2), ($1, $3)")
+        let rid_owner = template_role_id(&pool, "Owner").await;
+        let rid_viewer = template_role_id(&pool, "Viewer").await;
+
+        sqlx::query("INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES ($1, $2, $3), ($1, $4, $5)")
             .bind(uid_a)
+            .bind(rid_owner)
             .bind(tid_alpha)
+            .bind(rid_viewer)
             .bind(tid_beta)
             .execute(&pool)
             .await
             .unwrap();
-        sqlx::query("INSERT INTO user_tenants (user_id, tenant_id) VALUES ($1, $2)")
+        sqlx::query("INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES ($1, $2, $3)")
             .bind(uid_b)
+            .bind(rid_viewer)
             .bind(tid_beta)
             .execute(&pool)
             .await
@@ -196,11 +225,13 @@ mod tests {
             .unwrap();
         assert_eq!(tenant.name.as_str(), "Workshop");
 
+        let owner_role_id = template_role_id(&pool, "Owner").await;
         let cnt: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*)::bigint FROM user_tenants WHERE user_id = $1 AND tenant_id = $2",
+            "SELECT COUNT(*)::bigint FROM user_roles WHERE user_id = $1 AND tenant_id = $2 AND role_id = $3",
         )
         .bind(uid)
         .bind(i64::from(tenant.id))
+        .bind(owner_role_id)
         .fetch_one(&pool)
         .await
         .unwrap();
