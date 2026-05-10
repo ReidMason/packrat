@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 
 use packrat_application::AuthorizationQueryPort;
+use packrat_domain::PermissionSlug;
 use packrat_domain::tenant::TenantId;
 use packrat_domain::user::UserId;
-use packrat_domain::PermissionSlug;
 
 pub struct PostgresAuthorizationQuery {
     pool: PgPool,
@@ -112,19 +112,31 @@ mod tests {
 
         let q = PostgresAuthorizationQuery::new(pool.clone());
         assert!(
-            q.user_has_permission(UserId::from(uid), TenantId::from(tid), PermissionSlug::AssetsRead)
-                .await
-                .unwrap()
+            q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsRead
+            )
+            .await
+            .unwrap()
         );
         assert!(
-            !q.user_has_permission(UserId::from(uid), TenantId::from(tid), PermissionSlug::AssetsWrite)
-                .await
-                .unwrap()
+            !q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsWrite
+            )
+            .await
+            .unwrap()
         );
         assert!(
-            !q.user_has_permission(UserId::from(uid), TenantId::from(tid), PermissionSlug::AssetsDelete)
-                .await
-                .unwrap()
+            !q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsDelete
+            )
+            .await
+            .unwrap()
         );
     }
 
@@ -151,14 +163,31 @@ mod tests {
 
         let q = PostgresAuthorizationQuery::new(pool.clone());
         assert!(
-            q.user_has_permission(UserId::from(uid), TenantId::from(tid), PermissionSlug::AssetsDelete)
-                .await
-                .unwrap()
+            q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsRead
+            )
+            .await
+            .unwrap()
         );
         assert!(
-            q.user_has_permission(UserId::from(uid), TenantId::from(tid), PermissionSlug::AssetsWrite)
-                .await
-                .unwrap()
+            q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsDelete
+            )
+            .await
+            .unwrap()
+        );
+        assert!(
+            q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsWrite
+            )
+            .await
+            .unwrap()
         );
     }
 
@@ -175,9 +204,13 @@ mod tests {
 
         let q = PostgresAuthorizationQuery::new(pool.clone());
         assert!(
-            !q.user_has_permission(UserId::from(uid), TenantId::from(tid), PermissionSlug::AssetsRead)
-                .await
-                .unwrap()
+            !q.user_has_permission(
+                UserId::from(uid),
+                TenantId::from(tid),
+                PermissionSlug::AssetsRead
+            )
+            .await
+            .unwrap()
         );
     }
 }

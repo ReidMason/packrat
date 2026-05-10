@@ -1,5 +1,6 @@
 pub mod asset;
 pub mod health;
+pub mod tag;
 pub mod tenant;
 pub mod user;
 
@@ -8,5 +9,6 @@ pub use asset::{
     update_asset,
 };
 pub use health::check_readiness;
+pub use tag::{ensure_tag, list_tags, set_asset_tags};
 pub use tenant::{create_tenant, list_tenants_for_user};
 pub use user::{CreateUserUseCase, LoginResponse, LoginUseCase};

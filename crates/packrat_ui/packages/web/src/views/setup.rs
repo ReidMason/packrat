@@ -97,34 +97,32 @@ fn spawn_create_user(
     spawn(async move {
         let res = api_client::create_user(&base, email.clone(), password.clone()).await;
         match res {
-            Ok(user) => {
-                match api_client::login(&base, email, password).await {
-                    Ok(login) => {
-                        *auth_token.write() = Some(login.token.clone());
-                        crate::api_base::persist_auth_token(&login.token);
-                        registered_user.set(Some(user.clone()));
-                        result.set(None);
-                        let token = login.token;
-                        resolve_workspaces_after_auth(
-                            base,
-                            token,
-                            phase,
-                            active_tenant,
-                            workspace_options,
-                            signin_result,
-                            workspace_list_error,
-                            navigator,
-                            PostAuthFlow::Register,
-                        )
-                        .await;
-                    }
-                    Err(e) => {
-                        result.set(Some(Err(format!(
-                            "Account created but sign-in failed: {e}"
-                        ))));
-                    }
+            Ok(user) => match api_client::login(&base, email, password).await {
+                Ok(login) => {
+                    *auth_token.write() = Some(login.token.clone());
+                    crate::api_base::persist_auth_token(&login.token);
+                    registered_user.set(Some(user.clone()));
+                    result.set(None);
+                    let token = login.token;
+                    resolve_workspaces_after_auth(
+                        base,
+                        token,
+                        phase,
+                        active_tenant,
+                        workspace_options,
+                        signin_result,
+                        workspace_list_error,
+                        navigator,
+                        PostAuthFlow::Register,
+                    )
+                    .await;
                 }
-            }
+                Err(e) => {
+                    result.set(Some(Err(format!(
+                        "Account created but sign-in failed: {e}"
+                    ))));
+                }
+            },
             Err(e) => result.set(Some(Err(e))),
         }
         busy.set(false);

@@ -24,4 +24,3 @@ impl From<TenantName> for String {
         name.0
     }
 }
-

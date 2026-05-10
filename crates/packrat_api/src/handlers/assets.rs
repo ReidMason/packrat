@@ -5,9 +5,9 @@ use packrat_application::{
     AssetSearchQuery, create_asset, delete_asset, get_asset, list_assets, list_child_assets,
     search_assets,
 };
+use packrat_domain::PermissionSlug;
 use packrat_domain::asset::{AssetId, AssetName};
 use packrat_domain::tenant::TenantId;
-use packrat_domain::PermissionSlug;
 
 use crate::authorization::ensure_tenant_permission;
 use crate::dto::{AssetDto, CreateAssetDto, ErrorBody, SearchAssetsDto, SuccessBody};
@@ -27,7 +27,10 @@ pub async fn list_child_assets_handler(
     )
     .await;
     Ok(Json(SuccessBody::new(
-        entities.into_iter().map(AssetDto::from_entity).collect(),
+        entities
+            .into_iter()
+            .map(AssetDto::from_asset_with_tags)
+            .collect(),
     )))
 }
 
@@ -59,14 +62,12 @@ pub async fn search_assets_handler(
         ));
     }
     let query = AssetSearchQuery { name, fuzzyname };
-    let entities = search_assets(
-        state.query.as_ref(),
-        TenantId::from(tenant_id),
-        &query,
-    )
-    .await;
+    let entities = search_assets(state.query.as_ref(), TenantId::from(tenant_id), &query).await;
     Ok(Json(SuccessBody::new(
-        entities.into_iter().map(AssetDto::from_entity).collect(),
+        entities
+            .into_iter()
+            .map(AssetDto::from_asset_with_tags)
+            .collect(),
     )))
 }
 
@@ -77,7 +78,10 @@ pub async fn list_assets_handler(
 ) -> Result<Json<SuccessBody<Vec<AssetDto>>>, (StatusCode, Json<ErrorBody>)> {
     ensure_tenant_permission(&state, &session, tenant_id, PermissionSlug::AssetsRead).await?;
     let entities = list_assets(state.query.as_ref(), TenantId::from(tenant_id)).await;
-    let dtos: Vec<AssetDto> = entities.into_iter().map(AssetDto::from_entity).collect();
+    let dtos: Vec<AssetDto> = entities
+        .into_iter()
+        .map(AssetDto::from_asset_with_tags)
+        .collect();
     Ok(Json(SuccessBody::new(dtos)))
 }
 
@@ -128,7 +132,7 @@ pub async fn get_asset_handler(
     )
     .await
     {
-        Some(e) => Ok(Json(SuccessBody::new(AssetDto::from_entity(e)))),
+        Some(e) => Ok(Json(SuccessBody::new(AssetDto::from_asset_with_tags(e)))),
         None => Err((
             StatusCode::NOT_FOUND,
             Json(ErrorBody::message("asset not found")),

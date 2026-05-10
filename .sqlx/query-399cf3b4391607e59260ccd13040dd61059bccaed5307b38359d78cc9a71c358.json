@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets\n               WHERE deleted IS NULL AND tenant_id = $1\n                 AND ($2::text IS NULL OR name = $2)\n                 AND ($3::text IS NULL OR strpos(lower(name), lower($3)) > 0)\n               ORDER BY LOWER(name) ASC",
+  "query": "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets\n               WHERE deleted IS NULL AND tenant_id = $1\n                 AND ($2::text IS NULL OR name = $2)\n                 AND ($3::text IS NULL OR strpos(lower(name), lower($3)) > 0)\n               ORDER BY (parent_id IS NULL) DESC, LOWER(name) ASC",
   "describe": {
     "columns": [
       {
@@ -50,5 +50,5 @@
       true
     ]
   },
-  "hash": "4aeb3b5ef060bfe2b4f888fbc85ebeb10e5cdcc79923eee916e995a0ab7fe626"
+  "hash": "399cf3b4391607e59260ccd13040dd61059bccaed5307b38359d78cc9a71c358"
 }

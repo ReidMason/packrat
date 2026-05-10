@@ -13,6 +13,7 @@ pub fn NewAsset(tenant_id: i64) -> Element {
     let mut name = use_signal(String::new);
     let mut parent_sel = use_signal(String::new);
     let mut flash = use_signal(|| Option::<String>::None);
+    let mut last_created = use_signal(|| Option::<(i64, i64)>::None);
     let mut busy = use_signal(|| false);
     let mut list_gen = use_signal(|| 0u32);
 
@@ -105,6 +106,7 @@ pub fn NewAsset(tenant_id: i64) -> Element {
                             let tid = tenant_id;
                             busy.set(true);
                             flash.set(None);
+                            last_created.set(None);
                             spawn(async move {
                                 match api_client::create_asset(
                                         &base,
@@ -122,6 +124,7 @@ pub fn NewAsset(tenant_id: i64) -> Element {
                                             asset.id,
                                             asset.name.clone(),
                                         );
+                                        last_created.set(Some((asset.tenant_id, asset.id)));
                                         flash.set(Some(format!("Created “{}”.", asset.name)));
                                         name.write().clear();
                                         parent_sel.write().clear();
@@ -143,6 +146,15 @@ pub fn NewAsset(tenant_id: i64) -> Element {
 
                 if let Some(msg) = flash() {
                     p { class: "text-sm text-ui-info", "{msg}" }
+                }
+                if let Some((ltid, lid)) = last_created() {
+                    p { class: "pt-2",
+                        Link {
+                            class: "text-sm font-medium text-ui-primary hover:underline",
+                            to: Route::AssetDetail { tenant_id: ltid, id: lid },
+                            "Open asset to add tags →"
+                        }
+                    }
                 }
             }
         }

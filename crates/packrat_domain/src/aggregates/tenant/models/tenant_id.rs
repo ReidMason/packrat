@@ -12,4 +12,3 @@ impl From<TenantId> for i64 {
         id.0
     }
 }
-

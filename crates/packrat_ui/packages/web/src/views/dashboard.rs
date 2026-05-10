@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use super::asset_row::AssetCard;
 use super::recent_store::{remember_recent, save_recent_disk, RecentBrief};
 use crate::api_client::{self, AssetDto};
 use crate::Route;
@@ -180,32 +181,6 @@ pub fn Dashboard() -> Element {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn AssetCard(asset: AssetDto) -> Element {
-    let parent_note = if asset.parent_id.is_some() {
-        "Nested under another asset"
-    } else {
-        "Top level"
-    };
-    rsx! {
-        div {
-            class: "rounded-lg border border-ui-bg-dim bg-ui-bg-dim/40 p-4 space-y-2 text-sm cursor-pointer hover:opacity-95 transition-opacity",
-            p { class: "text-base font-medium text-ui-text", "{asset.name}" }
-            dl {
-                class: "grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ui-text-muted text-xs",
-                dt { "Placement" }
-                dd { "{parent_note}" }
-                dt { "Created" }
-                dd { class: "font-mono", "{asset.created}" }
-                if asset.deleted.is_some() {
-                    dt { "Status" }
-                    dd { "Removed" }
                 }
             }
         }

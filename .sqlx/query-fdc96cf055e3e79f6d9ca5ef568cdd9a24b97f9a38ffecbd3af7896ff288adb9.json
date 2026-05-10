@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 ORDER BY LOWER(name) ASC",
+  "query": "SELECT id, tenant_id, name, parent_id, created, deleted FROM assets WHERE deleted IS NULL AND tenant_id = $1 ORDER BY (parent_id IS NULL) DESC, LOWER(name) ASC",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       true
     ]
   },
-  "hash": "3c1d85d28d64a8238bd91dd51b5734e2434610d6e7baad8ab218854709bd3426"
+  "hash": "fdc96cf055e3e79f6d9ca5ef568cdd9a24b97f9a38ffecbd3af7896ff288adb9"
 }

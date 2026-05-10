@@ -12,4 +12,3 @@ impl From<UserId> for i64 {
         id.0
     }
 }
-

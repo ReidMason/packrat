@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 
-use packrat_application::{
-    TenantCommandError, TenantCommandPort, TenantMembershipQueryPort,
-};
+use packrat_application::{TenantCommandError, TenantCommandPort, TenantMembershipQueryPort};
 use packrat_domain::asset::AssetTimestamp;
 use packrat_domain::tenant::{Tenant, TenantId, TenantName};
 use packrat_domain::user::UserId;
@@ -147,14 +145,20 @@ mod tests {
         let uid_a = insert_user(&pool, "a-list-tenants@example.com").await;
         let uid_b = insert_user(&pool, "b-list-tenants@example.com").await;
 
-        let tid_alpha = sqlx::query_scalar!("INSERT INTO tenants (name) VALUES ($1) RETURNING id", "Alpha WS",)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-        let tid_beta = sqlx::query_scalar!("INSERT INTO tenants (name) VALUES ($1) RETURNING id", "Beta WS",)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+        let tid_alpha = sqlx::query_scalar!(
+            "INSERT INTO tenants (name) VALUES ($1) RETURNING id",
+            "Alpha WS",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let tid_beta = sqlx::query_scalar!(
+            "INSERT INTO tenants (name) VALUES ($1) RETURNING id",
+            "Beta WS",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
 
         let rid_owner = template_role_id(&pool, "Owner").await;
         let rid_viewer = template_role_id(&pool, "Viewer").await;

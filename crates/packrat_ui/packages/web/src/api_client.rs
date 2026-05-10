@@ -38,6 +38,12 @@ pub struct ReadyDto {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct TagDto {
+    pub id: i64,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AssetDto {
     pub id: i64,
     pub tenant_id: i64,
@@ -45,6 +51,8 @@ pub struct AssetDto {
     pub parent_id: Option<i64>,
     pub created: String,
     pub deleted: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<TagDto>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -78,6 +86,18 @@ struct CreateAssetRequest {
 
 fn tenant_assets_base(base: &str, tenant_id: i64) -> String {
     format!("{}/api/tenants/{tenant_id}/assets", http_base(base))
+}
+
+fn tenant_tags_search_url(base: &str, tenant_id: i64) -> String {
+    format!("{}/api/tenants/{tenant_id}/tags/search", http_base(base))
+}
+
+fn tenant_tags_url(base: &str, tenant_id: i64) -> String {
+    format!("{}/api/tenants/{tenant_id}/tags", http_base(base))
+}
+
+fn asset_tags_url(base: &str, tenant_id: i64, asset_id: i64) -> String {
+    format!("{}/{}/tags", tenant_assets_base(base, tenant_id), asset_id)
 }
 
 fn normalize_base(base: &str) -> String {
@@ -324,11 +344,7 @@ struct CreateTenantRequest {
     name: String,
 }
 
-pub async fn create_user(
-    base: &str,
-    email: String,
-    password: String,
-) -> Result<UserDto, String> {
+pub async fn create_user(base: &str, email: String, password: String) -> Result<UserDto, String> {
     let url = format!("{}/api/users", http_base(base));
     let body = CreateUserRequest { email, password };
     let resp = reqwest::Client::new()
@@ -371,6 +387,85 @@ pub async fn list_my_tenants(base: &str, token: Option<&str>) -> Result<Vec<Tena
     }
     let body: SuccessBody<Vec<TenantDto>> = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.data)
+}
+
+#[derive(Debug, Serialize)]
+pub struct SearchTagsRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefix: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct EnsureTagRequest {
+    name: String,
+}
+
+#[derive(Debug, Serialize)]
+struct SetAssetTagsRequest {
+    #[serde(default)]
+    tag_ids: Vec<i64>,
+}
+
+/// List or prefix-search tags (POST body; extensible for future filters).
+pub async fn search_tags(
+    base: &str,
+    tenant_id: i64,
+    body: &SearchTagsRequest,
+    token: Option<&str>,
+) -> Result<Vec<TagDto>, String> {
+    let url = tenant_tags_search_url(base, tenant_id);
+    let resp = with_bearer(reqwest::Client::new().post(&url).json(body), token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let wrapped: SuccessBody<Vec<TagDto>> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(wrapped.data)
+}
+
+/// Create tag if missing; returns existing tag when name already exists.
+pub async fn ensure_tag(
+    base: &str,
+    tenant_id: i64,
+    name: String,
+    token: Option<&str>,
+) -> Result<TagDto, String> {
+    let url = tenant_tags_url(base, tenant_id);
+    let body = EnsureTagRequest { name };
+    let resp = with_bearer(reqwest::Client::new().post(&url).json(&body), token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    let wrapped: SuccessBody<TagDto> = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(wrapped.data)
+}
+
+/// Replace the asset’s tags with exactly `tag_ids` (order ignored by server).
+pub async fn set_asset_tags(
+    base: &str,
+    tenant_id: i64,
+    asset_id: i64,
+    tag_ids: Vec<i64>,
+    token: Option<&str>,
+) -> Result<(), String> {
+    let url = asset_tags_url(base, tenant_id, asset_id);
+    let body = SetAssetTagsRequest { tag_ids };
+    let resp = with_bearer(reqwest::Client::new().put(&url).json(&body), token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if resp.status() == reqwest::StatusCode::NO_CONTENT {
+        return Ok(());
+    }
+    if !resp.status().is_success() {
+        return Err(map_api_error(resp).await);
+    }
+    Ok(())
 }
 
 pub async fn create_tenant(
